@@ -1,26 +1,49 @@
-import { ArrowDownCircle, ArrowUpCircle, Wallet, TrendingUp } from "lucide-react";
+import { useState } from "react";
+import { ArrowDownCircle, ArrowUpCircle, Wallet, TrendingUp, Upload } from "lucide-react";
 import { StatCard } from "@/components/dashboard/StatCard";
-import { TransactionTable } from "@/components/dashboard/TransactionTable";
+import { TransactionTable, Transaction } from "@/components/dashboard/TransactionTable";
 import { FinancialChart } from "@/components/dashboard/FinancialChart";
 import { CategoryPieChart } from "@/components/dashboard/CategoryPieChart";
+import { FileUpload } from "@/components/dashboard/FileUpload";
+import { TextImport } from "@/components/dashboard/TextImport";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Button } from "@/components/ui/button";
+import { 
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 import { 
   mockTransactions, 
   monthlyData, 
-  categoryDataEntradas, 
-  categoryDataSaidas 
 } from "@/data/mockTransactions";
 
 const Index = () => {
-  const totalEntradas = mockTransactions
+  const [transactions, setTransactions] = useState<Transaction[]>(mockTransactions);
+  const [isImportOpen, setIsImportOpen] = useState(false);
+
+  const handleTransactionsImported = (newTransactions: Transaction[]) => {
+    setTransactions(prev => [...newTransactions, ...prev]);
+    // Fecha o dialog após importação bem-sucedida
+    setTimeout(() => setIsImportOpen(false), 1500);
+  };
+
+  const totalEntradas = transactions
     .filter(t => t.type === "entrada")
     .reduce((acc, t) => acc + t.value, 0);
 
-  const totalSaidas = mockTransactions
+  const totalSaidas = transactions
     .filter(t => t.type === "saida")
     .reduce((acc, t) => acc + t.value, 0);
 
   const saldoLiquido = totalEntradas - totalSaidas;
+
+  // Calcula dados por categoria
+  const categoryDataEntradas = calculateCategoryData(transactions, 'entrada');
+  const categoryDataSaidas = calculateCategoryData(transactions, 'saida');
 
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat("pt-BR", {
@@ -34,14 +57,42 @@ const Index = () => {
       {/* Header */}
       <header className="border-b bg-card">
         <div className="container mx-auto px-4 py-6">
-          <div className="flex items-center gap-3">
-            <div className="p-2 rounded-lg bg-primary/10">
-              <Wallet className="h-6 w-6 text-primary" />
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-lg bg-primary/10">
+                <Wallet className="h-6 w-6 text-primary" />
+              </div>
+              <div>
+                <h1 className="text-2xl font-bold tracking-tight">Dashboard Financeiro</h1>
+                <p className="text-sm text-muted-foreground">Visão geral das suas finanças</p>
+              </div>
             </div>
-            <div>
-              <h1 className="text-2xl font-bold tracking-tight">Dashboard Financeiro</h1>
-              <p className="text-sm text-muted-foreground">Visão geral das suas finanças</p>
-            </div>
+            
+            <Dialog open={isImportOpen} onOpenChange={setIsImportOpen}>
+              <DialogTrigger asChild>
+                <Button>
+                  <Upload className="h-4 w-4 mr-2" />
+                  Importar Extrato
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+                <DialogHeader>
+                  <DialogTitle>Importar Extrato Bancário</DialogTitle>
+                </DialogHeader>
+                <Tabs defaultValue="file" className="mt-4">
+                  <TabsList className="grid w-full grid-cols-2">
+                    <TabsTrigger value="file">Arquivo</TabsTrigger>
+                    <TabsTrigger value="text">Texto</TabsTrigger>
+                  </TabsList>
+                  <TabsContent value="file" className="mt-4">
+                    <FileUpload onTransactionsImported={handleTransactionsImported} />
+                  </TabsContent>
+                  <TabsContent value="text" className="mt-4">
+                    <TextImport onTransactionsImported={handleTransactionsImported} />
+                  </TabsContent>
+                </Tabs>
+              </DialogContent>
+            </Dialog>
           </div>
         </div>
       </header>
@@ -74,7 +125,7 @@ const Index = () => {
           />
           <StatCard
             title="Transações"
-            value={mockTransactions.length.toString()}
+            value={transactions.length.toString()}
             description="Total de lançamentos"
             icon={Wallet}
           />
@@ -97,7 +148,7 @@ const Index = () => {
                 <CardTitle>Transações Recentes</CardTitle>
               </CardHeader>
               <CardContent>
-                <TransactionTable transactions={mockTransactions} />
+                <TransactionTable transactions={transactions} />
               </CardContent>
             </Card>
           </div>
@@ -109,5 +160,38 @@ const Index = () => {
     </div>
   );
 };
+
+function calculateCategoryData(transactions: Transaction[], type: 'entrada' | 'saida') {
+  const categoryColors: Record<string, string> = {
+    pix: "#8b5cf6",
+    transferencia: "#3b82f6",
+    cartao: "#f59e0b",
+    taxas: "#64748b",
+    outros: "#6b7280",
+  };
+
+  const categoryLabels: Record<string, string> = {
+    pix: "Pix",
+    transferencia: "Transferência",
+    cartao: "Cartão",
+    taxas: "Taxas",
+    outros: "Outros",
+  };
+
+  const filtered = transactions.filter(t => t.type === type);
+  const grouped: Record<string, number> = {};
+
+  for (const t of filtered) {
+    grouped[t.category] = (grouped[t.category] || 0) + t.value;
+  }
+
+  return Object.entries(grouped)
+    .filter(([_, value]) => value > 0)
+    .map(([category, value]) => ({
+      name: categoryLabels[category] || category,
+      value,
+      color: categoryColors[category] || "#6b7280",
+    }));
+}
 
 export default Index;
