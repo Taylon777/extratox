@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { ArrowDownCircle, ArrowUpCircle, Wallet, TrendingUp, Upload } from "lucide-react";
 import { StatCard } from "@/components/dashboard/StatCard";
 import { TransactionTable, Transaction } from "@/components/dashboard/TransactionTable";
@@ -6,6 +6,7 @@ import { FinancialChart } from "@/components/dashboard/FinancialChart";
 import { CategoryPieChart } from "@/components/dashboard/CategoryPieChart";
 import { FileUpload } from "@/components/dashboard/FileUpload";
 import { TextImport } from "@/components/dashboard/TextImport";
+import { TransactionFilters, FilterState } from "@/components/dashboard/TransactionFilters";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
@@ -24,6 +25,11 @@ import {
 const Index = () => {
   const [transactions, setTransactions] = useState<Transaction[]>(mockTransactions);
   const [isImportOpen, setIsImportOpen] = useState(false);
+  const [filters, setFilters] = useState<FilterState>({
+    startDate: undefined,
+    endDate: undefined,
+    excludedCategories: [],
+  });
 
   const handleTransactionsImported = (newTransactions: Transaction[]) => {
     setTransactions(prev => [...newTransactions, ...prev]);
@@ -31,19 +37,38 @@ const Index = () => {
     setTimeout(() => setIsImportOpen(false), 1500);
   };
 
-  const totalEntradas = transactions
+  // Apply filters to transactions
+  const filteredTransactions = useMemo(() => {
+    return transactions.filter(t => {
+      // Date range filter
+      const transactionDate = new Date(t.date);
+      if (filters.startDate && transactionDate < filters.startDate) return false;
+      if (filters.endDate) {
+        const endOfDay = new Date(filters.endDate);
+        endOfDay.setHours(23, 59, 59, 999);
+        if (transactionDate > endOfDay) return false;
+      }
+      
+      // Category exclusion filter
+      if (filters.excludedCategories.includes(t.category)) return false;
+      
+      return true;
+    });
+  }, [transactions, filters]);
+
+  const totalEntradas = filteredTransactions
     .filter(t => t.type === "entrada")
     .reduce((acc, t) => acc + t.value, 0);
 
-  const totalSaidas = transactions
+  const totalSaidas = filteredTransactions
     .filter(t => t.type === "saida")
     .reduce((acc, t) => acc + t.value, 0);
 
   const saldoLiquido = totalEntradas - totalSaidas;
 
-  // Calcula dados por categoria
-  const categoryDataEntradas = calculateCategoryData(transactions, 'entrada');
-  const categoryDataSaidas = calculateCategoryData(transactions, 'saida');
+  // Calcula dados por categoria (usando transações filtradas)
+  const categoryDataEntradas = calculateCategoryData(filteredTransactions, 'entrada');
+  const categoryDataSaidas = calculateCategoryData(filteredTransactions, 'saida');
 
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat("pt-BR", {
@@ -98,12 +123,17 @@ const Index = () => {
       </header>
 
       <main className="container mx-auto px-4 py-8 space-y-8">
+        {/* Filters Section */}
+        <section>
+          <TransactionFilters filters={filters} onFiltersChange={setFilters} />
+        </section>
+
         {/* Stats Cards */}
         <section className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
           <StatCard
             title="Total Entradas"
             value={formatCurrency(totalEntradas)}
-            description="Período atual"
+            description={filters.excludedCategories.length > 0 ? "Filtrado" : "Período atual"}
             icon={ArrowUpCircle}
             variant="success"
             trend={{ value: 12.5, isPositive: true }}
@@ -111,7 +141,7 @@ const Index = () => {
           <StatCard
             title="Total Saídas"
             value={formatCurrency(totalSaidas)}
-            description="Período atual"
+            description={filters.excludedCategories.length > 0 ? "Filtrado" : "Período atual"}
             icon={ArrowDownCircle}
             variant="danger"
             trend={{ value: 3.2, isPositive: false }}
@@ -125,8 +155,8 @@ const Index = () => {
           />
           <StatCard
             title="Transações"
-            value={transactions.length.toString()}
-            description="Total de lançamentos"
+            value={`${filteredTransactions.length}/${transactions.length}`}
+            description={filteredTransactions.length !== transactions.length ? "Filtrado/Total" : "Total de lançamentos"}
             icon={Wallet}
           />
         </section>
@@ -145,10 +175,17 @@ const Index = () => {
           <div className="lg:col-span-2">
             <Card>
               <CardHeader>
-                <CardTitle>Transações Recentes</CardTitle>
+                <CardTitle>
+                  Transações Recentes
+                  {filteredTransactions.length !== transactions.length && (
+                    <span className="text-sm font-normal text-muted-foreground ml-2">
+                      ({filteredTransactions.length} de {transactions.length})
+                    </span>
+                  )}
+                </CardTitle>
               </CardHeader>
               <CardContent>
-                <TransactionTable transactions={transactions} />
+                <TransactionTable transactions={filteredTransactions} />
               </CardContent>
             </Card>
           </div>
