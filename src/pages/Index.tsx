@@ -1,4 +1,5 @@
 import { useState, useMemo } from "react";
+import { useNavigate } from "react-router-dom";
 import { ArrowDownCircle, ArrowUpCircle, Wallet, TrendingUp, Upload } from "lucide-react";
 import { StatCard } from "@/components/dashboard/StatCard";
 import { TransactionTable, Transaction } from "@/components/dashboard/TransactionTable";
@@ -17,13 +18,15 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { 
-  mockTransactions, 
-  monthlyData, 
-} from "@/data/mockTransactions";
+import { monthlyData } from "@/data/mockTransactions";
 
-const Index = () => {
-  const [transactions, setTransactions] = useState<Transaction[]>(mockTransactions);
+interface IndexProps {
+  transactions: Transaction[];
+  setTransactions: React.Dispatch<React.SetStateAction<Transaction[]>>;
+}
+
+const Index = ({ transactions, setTransactions }: IndexProps) => {
+  const navigate = useNavigate();
   const [isImportOpen, setIsImportOpen] = useState(false);
   const [filters, setFilters] = useState<FilterState>({
     startDate: undefined,
@@ -33,14 +36,11 @@ const Index = () => {
 
   const handleTransactionsImported = (newTransactions: Transaction[]) => {
     setTransactions(prev => [...newTransactions, ...prev]);
-    // Fecha o dialog após importação bem-sucedida
     setTimeout(() => setIsImportOpen(false), 1500);
   };
 
-  // Apply filters to transactions
   const filteredTransactions = useMemo(() => {
     return transactions.filter(t => {
-      // Date range filter
       const transactionDate = new Date(t.date);
       if (filters.startDate && transactionDate < filters.startDate) return false;
       if (filters.endDate) {
@@ -48,10 +48,7 @@ const Index = () => {
         endOfDay.setHours(23, 59, 59, 999);
         if (transactionDate > endOfDay) return false;
       }
-      
-      // Category exclusion filter
       if (filters.excludedCategories.includes(t.category)) return false;
-      
       return true;
     });
   }, [transactions, filters]);
@@ -66,7 +63,6 @@ const Index = () => {
 
   const saldoLiquido = totalEntradas - totalSaidas;
 
-  // Calcula dados por categoria (usando transações filtradas)
   const categoryDataEntradas = calculateCategoryData(filteredTransactions, 'entrada');
   const categoryDataSaidas = calculateCategoryData(filteredTransactions, 'saida');
 
@@ -79,7 +75,6 @@ const Index = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Header */}
       <header className="border-b bg-card">
         <div className="container mx-auto px-4 py-6">
           <div className="flex items-center justify-between">
@@ -93,42 +88,47 @@ const Index = () => {
               </div>
             </div>
             
-            <Dialog open={isImportOpen} onOpenChange={setIsImportOpen}>
-              <DialogTrigger asChild>
-                <Button>
-                  <Upload className="h-4 w-4 mr-2" />
-                  Importar Extrato
-                </Button>
-              </DialogTrigger>
-              <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-                <DialogHeader>
-                  <DialogTitle>Importar Extrato Bancário</DialogTitle>
-                </DialogHeader>
-                <Tabs defaultValue="file" className="mt-4">
-                  <TabsList className="grid w-full grid-cols-2">
-                    <TabsTrigger value="file">Arquivo</TabsTrigger>
-                    <TabsTrigger value="text">Texto</TabsTrigger>
-                  </TabsList>
-                  <TabsContent value="file" className="mt-4">
-                    <FileUpload onTransactionsImported={handleTransactionsImported} />
-                  </TabsContent>
-                  <TabsContent value="text" className="mt-4">
-                    <TextImport onTransactionsImported={handleTransactionsImported} />
-                  </TabsContent>
-                </Tabs>
-              </DialogContent>
-            </Dialog>
+            <div className="flex gap-3">
+              <Button variant="outline" onClick={() => navigate("/importacao")}>
+                <Upload className="h-4 w-4 mr-2" />
+                Importação Financeira
+              </Button>
+              
+              <Dialog open={isImportOpen} onOpenChange={setIsImportOpen}>
+                <DialogTrigger asChild>
+                  <Button variant="secondary">
+                    <Upload className="h-4 w-4 mr-2" />
+                    Importar Rápido
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+                  <DialogHeader>
+                    <DialogTitle>Importar Extrato Bancário</DialogTitle>
+                  </DialogHeader>
+                  <Tabs defaultValue="file" className="mt-4">
+                    <TabsList className="grid w-full grid-cols-2">
+                      <TabsTrigger value="file">Arquivo</TabsTrigger>
+                      <TabsTrigger value="text">Texto</TabsTrigger>
+                    </TabsList>
+                    <TabsContent value="file" className="mt-4">
+                      <FileUpload onTransactionsImported={handleTransactionsImported} />
+                    </TabsContent>
+                    <TabsContent value="text" className="mt-4">
+                      <TextImport onTransactionsImported={handleTransactionsImported} />
+                    </TabsContent>
+                  </Tabs>
+                </DialogContent>
+              </Dialog>
+            </div>
           </div>
         </div>
       </header>
 
       <main className="container mx-auto px-4 py-8 space-y-8">
-        {/* Filters Section */}
         <section>
           <TransactionFilters filters={filters} onFiltersChange={setFilters} />
         </section>
 
-        {/* Stats Cards */}
         <section className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
           <StatCard
             title="Total Entradas"
@@ -161,7 +161,6 @@ const Index = () => {
           />
         </section>
 
-        {/* Charts Section */}
         <section className="grid gap-6 lg:grid-cols-3">
           <div className="lg:col-span-2">
             <FinancialChart data={monthlyData} />
