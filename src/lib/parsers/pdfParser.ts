@@ -127,7 +127,8 @@ function detectCategory(description: string): Transaction['category'] {
   
   if (desc.includes('pix')) return 'pix';
   if (desc.includes('ted') || desc.includes('doc') || desc.includes('transf')) return 'transferencia';
-  if (desc.includes('cartao') || desc.includes('cartão') || desc.includes('compra')) return 'cartao';
+  if (desc.includes('debito') || desc.includes('débito')) return 'cartao_debito';
+  if (desc.includes('credito') || desc.includes('crédito') || desc.includes('cartao') || desc.includes('cartão') || desc.includes('compra')) return 'cartao_credito';
   if (desc.includes('taxa') || desc.includes('tarifa') || desc.includes('iof') || desc.includes('juros')) return 'taxas';
   
   return 'outros';

@@ -21,7 +21,7 @@ export const mockTransactions: Transaction[] = [
     id: "3",
     date: "2024-01-16",
     description: "Venda Produto X",
-    category: "cartao",
+    category: "cartao_debito",
     type: "entrada",
     value: 1250.00,
   },
@@ -69,7 +69,7 @@ export const mockTransactions: Transaction[] = [
     id: "9",
     date: "2024-01-19",
     description: "Venda Online",
-    category: "cartao",
+    category: "cartao_credito",
     type: "entrada",
     value: 780.00,
   },
@@ -111,7 +111,8 @@ export const monthlyData = [
 export const categoryDataEntradas = [
   { name: "Pix", value: 18000, color: "#8b5cf6" },
   { name: "Transferência", value: 12000, color: "#3b82f6" },
-  { name: "Cartão", value: 2030, color: "#f59e0b" },
+  { name: "Vendas – Disponível Débito", value: 1250, color: "#10b981" },
+  { name: "Vendas – Disponível Crédito", value: 780, color: "#f59e0b" },
 ];
 
 export const categoryDataSaidas = [

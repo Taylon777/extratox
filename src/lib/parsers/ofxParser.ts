@@ -63,7 +63,8 @@ function detectCategory(description: string, trnType: string | null): Transactio
   
   if (desc.includes('pix') || type === 'pix') return 'pix';
   if (desc.includes('ted') || desc.includes('doc') || type === 'xfer' || desc.includes('transf')) return 'transferencia';
-  if (desc.includes('cartao') || desc.includes('cartão') || type === 'pos' || type === 'debit') return 'cartao';
+  if (desc.includes('debito') || desc.includes('débito') || type === 'debit') return 'cartao_debito';
+  if (desc.includes('credito') || desc.includes('crédito') || desc.includes('cartao') || desc.includes('cartão') || type === 'pos') return 'cartao_credito';
   if (desc.includes('taxa') || desc.includes('tarifa') || type === 'fee' || type === 'srvchg') return 'taxas';
   
   return 'outros';

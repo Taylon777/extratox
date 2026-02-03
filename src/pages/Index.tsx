@@ -202,7 +202,8 @@ function calculateCategoryData(transactions: Transaction[], type: 'entrada' | 's
   const categoryColors: Record<string, string> = {
     pix: "#8b5cf6",
     transferencia: "#3b82f6",
-    cartao: "#f59e0b",
+    cartao_debito: "#10b981",
+    cartao_credito: "#f59e0b",
     taxas: "#64748b",
     outros: "#6b7280",
   };
@@ -210,7 +211,8 @@ function calculateCategoryData(transactions: Transaction[], type: 'entrada' | 's
   const categoryLabels: Record<string, string> = {
     pix: "Pix",
     transferencia: "Transferência",
-    cartao: "Cartão",
+    cartao_debito: "Vendas – Disponível Débito",
+    cartao_credito: "Vendas – Disponível Crédito",
     taxas: "Taxas",
     outros: "Outros",
   };
