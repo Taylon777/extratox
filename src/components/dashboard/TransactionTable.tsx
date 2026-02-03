@@ -13,7 +13,7 @@ export interface Transaction {
   id: string;
   date: string;
   description: string;
-  category: "pix" | "transferencia" | "cartao" | "taxas" | "outros";
+  category: "pix" | "transferencia" | "cartao_debito" | "cartao_credito" | "taxas" | "outros";
   type: "entrada" | "saida";
   value: number;
 }
@@ -25,7 +25,8 @@ interface TransactionTableProps {
 const categoryLabels: Record<Transaction["category"], string> = {
   pix: "Pix",
   transferencia: "Transferência",
-  cartao: "Cartão",
+  cartao_debito: "Vendas – Disponível Débito",
+  cartao_credito: "Vendas – Disponível Crédito",
   taxas: "Taxas",
   outros: "Outros",
 };
@@ -33,7 +34,8 @@ const categoryLabels: Record<Transaction["category"], string> = {
 const categoryColors: Record<Transaction["category"], string> = {
   pix: "bg-violet-100 text-violet-800 dark:bg-violet-900 dark:text-violet-300",
   transferencia: "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300",
-  cartao: "bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-300",
+  cartao_debito: "bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-300",
+  cartao_credito: "bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-300",
   taxas: "bg-slate-100 text-slate-800 dark:bg-slate-900 dark:text-slate-300",
   outros: "bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-300",
 };

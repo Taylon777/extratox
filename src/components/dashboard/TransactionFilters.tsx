@@ -30,7 +30,8 @@ interface TransactionFiltersProps {
 const categoryOptions: { value: Transaction["category"]; label: string; color: string }[] = [
   { value: "pix", label: "Pix", color: "bg-violet-100 text-violet-800 dark:bg-violet-900 dark:text-violet-300" },
   { value: "transferencia", label: "Transferência", color: "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300" },
-  { value: "cartao", label: "Cartão", color: "bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-300" },
+  { value: "cartao_debito", label: "Vendas – Disponível Débito", color: "bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-300" },
+  { value: "cartao_credito", label: "Vendas – Disponível Crédito", color: "bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-300" },
   { value: "taxas", label: "Taxas", color: "bg-slate-100 text-slate-800 dark:bg-slate-900 dark:text-slate-300" },
   { value: "outros", label: "Outros", color: "bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-300" },
 ];
