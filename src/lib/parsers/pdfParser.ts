@@ -4,83 +4,125 @@ import { Transaction } from "@/components/dashboard/TransactionTable";
 export function parsePDFText(text: string): Transaction[] {
   const transactions: Transaction[] = [];
   
-  // Primeiro, tenta normalizar o texto separando transações por padrão de data
-  // Isso é útil quando o texto é colado sem quebras de linha
+  // Normaliza o texto, separando transações por padrão de data
   const normalizedText = normalizeTextWithDateDelimiters(text);
   const lines = normalizedText.split('\n');
 
-  // Padrões comuns em extratos bancários brasileiros
-  const patterns = [
-    // DD/MM/YYYY Descrição Valor (com ou sem sinal negativo)
-    /(\d{2}\/\d{2}\/\d{4})\s+(.+?)\s+([-+]?\s*R?\$?\s*[\d.,]+(?:,\d{2})?)\s*$/,
-    // DD/MM Descrição Valor
-    /(\d{2}\/\d{2})\s+(.+?)\s+([-+]?\s*R?\$?\s*[\d.,]+(?:,\d{2})?)\s*$/,
-    // Descrição DD/MM Valor
-    /(.+?)\s+(\d{2}\/\d{2}(?:\/\d{4})?)\s+([-+]?\s*R?\$?\s*[\d.,]+(?:,\d{2})?)\s*$/,
-  ];
-
   for (const line of lines) {
     const trimmedLine = line.trim();
-    if (!trimmedLine || trimmedLine.length < 10) continue;
+    if (!trimmedLine || trimmedLine.length < 8) continue;
 
-    for (const pattern of patterns) {
-      const match = trimmedLine.match(pattern);
-      if (match) {
-        let dateStr: string;
-        let description: string;
-        let valueStr: string;
+    // Ignora linhas que parecem ser cabeçalhos ou totais
+    if (isHeaderOrTotal(trimmedLine)) continue;
 
-        if (pattern.source.startsWith('(.+?)')) {
-          // Padrão: Descrição DD/MM Valor
-          description = match[1].trim();
-          dateStr = match[2];
-          valueStr = match[3];
-        } else {
-          // Padrão: DD/MM Descrição Valor
-          dateStr = match[1];
-          description = match[2].trim();
-          valueStr = match[3];
-        }
-
-        // Ignora linhas que parecem ser cabeçalhos ou totais
-        if (isHeaderOrTotal(description)) continue;
-
-        const value = parseValue(valueStr);
-        if (value === null) continue;
-
-        const parsedDate = parsePDFDate(dateStr);
-
-        transactions.push({
-          id: `pdf-${Date.now()}-${transactions.length}`,
-          date: parsedDate,
-          description: cleanDescription(description),
-          category: detectCategory(description),
-          type: value >= 0 ? 'entrada' : 'saida',
-          value: Math.abs(value),
-        });
-        break;
-      }
+    const transaction = parseLine(trimmedLine);
+    if (transaction) {
+      transactions.push({
+        ...transaction,
+        id: `pdf-${Date.now()}-${transactions.length}`,
+      });
     }
   }
 
   return transactions;
 }
 
+// Tenta extrair uma transação de uma única linha
+function parseLine(line: string): Omit<Transaction, 'id'> | null {
+  // Padrões de data
+  const datePatterns = [
+    /^(\d{2}\/\d{2}\/\d{4})/,  // DD/MM/YYYY no início
+    /^(\d{2}\/\d{2})/,         // DD/MM no início
+    /^(\d{2}-\d{2}-\d{4})/,    // DD-MM-YYYY no início
+  ];
+
+  let dateMatch: RegExpMatchArray | null = null;
+  let dateStr = '';
+  
+  for (const pattern of datePatterns) {
+    dateMatch = line.match(pattern);
+    if (dateMatch) {
+      dateStr = dateMatch[1];
+      break;
+    }
+  }
+
+  if (!dateMatch) return null;
+
+  // Remove a data do início da linha
+  let remaining = line.slice(dateMatch[0].length).trim();
+
+  // Extrai o valor (último número da linha, com possível sinal negativo antes)
+  const valuePattern = /([-+]?\s*R?\$?\s*)([\d.]+,\d{2})\s*$/;
+  const valueMatch = remaining.match(valuePattern);
+  
+  if (!valueMatch) {
+    // Tenta formato sem centavos
+    const simpleValuePattern = /([-+]?\s*R?\$?\s*)([\d.]+)\s*$/;
+    const simpleMatch = remaining.match(simpleValuePattern);
+    if (!simpleMatch) return null;
+    
+    const value = parseValue(simpleMatch[1] + simpleMatch[2]);
+    if (value === null) return null;
+
+    const description = remaining.slice(0, simpleMatch.index).trim();
+    if (!description) return null;
+
+    const parsedDate = parsePDFDate(dateStr);
+    const cleanedDesc = cleanDescription(description);
+
+    return {
+      date: parsedDate,
+      description: cleanedDesc,
+      category: detectCategory(cleanedDesc),
+      type: value >= 0 ? 'entrada' : 'saida',
+      value: Math.abs(value),
+    };
+  }
+
+  const value = parseValue(valueMatch[1] + valueMatch[2]);
+  if (value === null) return null;
+
+  const description = remaining.slice(0, valueMatch.index).trim();
+  if (!description) return null;
+
+  const parsedDate = parsePDFDate(dateStr);
+  const cleanedDesc = cleanDescription(description);
+
+  return {
+    date: parsedDate,
+    description: cleanedDesc,
+    category: detectCategory(cleanedDesc),
+    type: value >= 0 ? 'entrada' : 'saida',
+    value: Math.abs(value),
+  };
+}
+
 // Normaliza texto que pode estar concatenado, separando por padrões de data
 function normalizeTextWithDateDelimiters(text: string): string {
-  // Se já tem quebras de linha suficientes, retorna como está
-  if (text.split('\n').filter(l => l.trim()).length > 1) {
+  // Se já tem quebras de linha com conteúdo, processa normalmente
+  const existingLines = text.split('\n').filter(l => l.trim());
+  if (existingLines.length > 1) {
     return text;
   }
   
-  // Insere quebra de linha antes de cada padrão de data DD/MM/YYYY ou DD/MM
-  // Mas cuidado para não quebrar valores monetários como "1.500,00"
   let normalized = text;
   
-  // Padrão: encontra datas no formato DD/MM/YYYY ou DD/MM que iniciam uma transação
-  // Adiciona quebra de linha antes delas, exceto a primeira
-  normalized = normalized.replace(/(\d{1,2}[,.]?\d{2,3}[,.]?\d{2})(\d{2}\/\d{2}\/\d{4})/g, '$1\n$2');
-  normalized = normalized.replace(/(\d{1,2}[,.]?\d{2,3}[,.]?\d{2})(\d{2}\/\d{2}(?!\/))/g, '$1\n$2');
+  // Insere quebra de linha ANTES de padrões de data que começam uma nova transação
+  // Procura por valor seguido de data (ex: "1.500,0015/01/2024" -> "1.500,00\n15/01/2024")
+  
+  // Padrão: número com centavos (,XX) seguido de data DD/MM/YYYY
+  normalized = normalized.replace(/(\d,\d{2})(\d{2}\/\d{2}\/\d{4})/g, '$1\n$2');
+  
+  // Padrão: número com centavos seguido de data DD/MM (sem ano)
+  normalized = normalized.replace(/(\d,\d{2})(\d{2}\/\d{2})(?![\/\d])/g, '$1\n$2');
+  
+  // Padrão: valor inteiro seguido de data (menos comum, mas possível)
+  normalized = normalized.replace(/(\d{2,})(\d{2}\/\d{2}\/\d{4})/g, (match, val, date) => {
+    // Verifica se não é um valor decimal mal formatado
+    if (val.length <= 2) return match;
+    return val + '\n' + date;
+  });
   
   return normalized;
 }
@@ -88,30 +130,30 @@ function normalizeTextWithDateDelimiters(text: string): string {
 function isHeaderOrTotal(text: string): boolean {
   const lowerText = text.toLowerCase();
   const headerKeywords = [
-    'data', 'descrição', 'valor', 'saldo', 'total', 'anterior',
-    'extrato', 'período', 'agência', 'conta', 'cliente'
+    'data', 'descrição', 'descricao', 'valor', 'saldo', 'total', 'anterior',
+    'extrato', 'período', 'periodo', 'agência', 'agencia', 'conta', 'cliente',
+    'banco', 'movimentação', 'movimentacao', 'lançamentos', 'lancamentos'
   ];
-  return headerKeywords.some(keyword => lowerText.includes(keyword) && lowerText.length < 30);
+  
+  // Se a linha é muito curta e contém palavras-chave, é provavelmente cabeçalho
+  return headerKeywords.some(keyword => 
+    lowerText.includes(keyword) && lowerText.length < 40
+  );
 }
 
 function parseValue(valueStr: string): number | null {
-  // Remove R$, espaços e sinais
+  // Remove R$, espaços
   let cleaned = valueStr.replace(/[R$\s]/g, '').trim();
-  const isNegative = cleaned.includes('-') || valueStr.includes('-');
   
+  // Detecta se é negativo
+  const isNegative = cleaned.includes('-');
   cleaned = cleaned.replace(/[-+]/g, '');
   
-  // Trata formato brasileiro (1.234,56) vs americano (1,234.56)
-  if (cleaned.includes(',') && cleaned.includes('.')) {
-    // Se vírgula vem depois do ponto, é formato brasileiro
-    if (cleaned.lastIndexOf(',') > cleaned.lastIndexOf('.')) {
-      cleaned = cleaned.replace(/\./g, '').replace(',', '.');
-    } else {
-      cleaned = cleaned.replace(/,/g, '');
-    }
-  } else if (cleaned.includes(',')) {
-    // Só vírgula - provavelmente decimal brasileiro
-    cleaned = cleaned.replace(',', '.');
+  // Trata formato brasileiro (1.234,56)
+  // Remove pontos de milhar e troca vírgula por ponto
+  if (cleaned.includes(',')) {
+    // Remove pontos (separadores de milhar) e troca vírgula por ponto
+    cleaned = cleaned.replace(/\./g, '').replace(',', '.');
   }
 
   const value = parseFloat(cleaned);
@@ -123,14 +165,14 @@ function parseValue(valueStr: string): number | null {
 function parsePDFDate(dateStr: string): string {
   const currentYear = new Date().getFullYear();
   
-  // DD/MM/YYYY
-  let match = dateStr.match(/(\d{2})\/(\d{2})\/(\d{4})/);
+  // DD/MM/YYYY ou DD-MM-YYYY
+  let match = dateStr.match(/(\d{2})[\/\-](\d{2})[\/\-](\d{4})/);
   if (match) {
     return `${match[3]}-${match[2]}-${match[1]}`;
   }
   
   // DD/MM (assume ano atual)
-  match = dateStr.match(/(\d{2})\/(\d{2})/);
+  match = dateStr.match(/(\d{2})[\/\-](\d{2})/);
   if (match) {
     return `${currentYear}-${match[2]}-${match[1]}`;
   }
@@ -140,19 +182,39 @@ function parsePDFDate(dateStr: string): string {
 
 function cleanDescription(description: string): string {
   return description
-    .replace(/\s+/g, ' ')
-    .replace(/^\d+\s*/, '')
+    .replace(/\s+/g, ' ')  // Remove múltiplos espaços
+    .replace(/^\d+\s*/, '') // Remove números no início
+    .replace(/[-–]\s*$/, '') // Remove traços no final
     .trim();
 }
 
 function detectCategory(description: string): Transaction['category'] {
   const desc = description.toLowerCase();
   
+  // PIX
   if (desc.includes('pix')) return 'pix';
+  
+  // Transferências
   if (desc.includes('ted') || desc.includes('doc') || desc.includes('transf')) return 'transferencia';
-  if (desc.includes('debito') || desc.includes('débito')) return 'cartao_debito';
-  if (desc.includes('credito') || desc.includes('crédito') || desc.includes('cartao') || desc.includes('cartão') || desc.includes('compra')) return 'cartao_credito';
-  if (desc.includes('taxa') || desc.includes('tarifa') || desc.includes('iof') || desc.includes('juros')) return 'taxas';
+  
+  // Taxas e tarifas (ANTES de cartão para evitar conflito)
+  if (desc.includes('taxa') || desc.includes('tarifa') || desc.includes('iof') || 
+      desc.includes('juros') || desc.includes('manutenção') || desc.includes('manutencao')) {
+    return 'taxas';
+  }
+  
+  // Cartão débito
+  if (desc.includes('debito') || desc.includes('débito') || 
+      (desc.includes('cartao') && desc.includes('debito')) ||
+      (desc.includes('cartão') && desc.includes('débito'))) {
+    return 'cartao_debito';
+  }
+  
+  // Cartão crédito
+  if (desc.includes('credito') || desc.includes('crédito') || 
+      desc.includes('cartao') || desc.includes('cartão') || desc.includes('compra')) {
+    return 'cartao_credito';
+  }
   
   return 'outros';
 }
