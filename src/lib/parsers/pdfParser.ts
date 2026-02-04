@@ -3,11 +3,15 @@ import { Transaction } from "@/components/dashboard/TransactionTable";
 // Parser para extrair transações de texto extraído de PDF
 export function parsePDFText(text: string): Transaction[] {
   const transactions: Transaction[] = [];
-  const lines = text.split('\n');
+  
+  // Primeiro, tenta normalizar o texto separando transações por padrão de data
+  // Isso é útil quando o texto é colado sem quebras de linha
+  const normalizedText = normalizeTextWithDateDelimiters(text);
+  const lines = normalizedText.split('\n');
 
   // Padrões comuns em extratos bancários brasileiros
   const patterns = [
-    // DD/MM/YYYY Descrição Valor
+    // DD/MM/YYYY Descrição Valor (com ou sem sinal negativo)
     /(\d{2}\/\d{2}\/\d{4})\s+(.+?)\s+([-+]?\s*R?\$?\s*[\d.,]+(?:,\d{2})?)\s*$/,
     // DD/MM Descrição Valor
     /(\d{2}\/\d{2})\s+(.+?)\s+([-+]?\s*R?\$?\s*[\d.,]+(?:,\d{2})?)\s*$/,
@@ -60,6 +64,25 @@ export function parsePDFText(text: string): Transaction[] {
   }
 
   return transactions;
+}
+
+// Normaliza texto que pode estar concatenado, separando por padrões de data
+function normalizeTextWithDateDelimiters(text: string): string {
+  // Se já tem quebras de linha suficientes, retorna como está
+  if (text.split('\n').filter(l => l.trim()).length > 1) {
+    return text;
+  }
+  
+  // Insere quebra de linha antes de cada padrão de data DD/MM/YYYY ou DD/MM
+  // Mas cuidado para não quebrar valores monetários como "1.500,00"
+  let normalized = text;
+  
+  // Padrão: encontra datas no formato DD/MM/YYYY ou DD/MM que iniciam uma transação
+  // Adiciona quebra de linha antes delas, exceto a primeira
+  normalized = normalized.replace(/(\d{1,2}[,.]?\d{2,3}[,.]?\d{2})(\d{2}\/\d{2}\/\d{4})/g, '$1\n$2');
+  normalized = normalized.replace(/(\d{1,2}[,.]?\d{2,3}[,.]?\d{2})(\d{2}\/\d{2}(?!\/))/g, '$1\n$2');
+  
+  return normalized;
 }
 
 function isHeaderOrTotal(text: string): boolean {
