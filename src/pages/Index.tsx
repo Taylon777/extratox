@@ -1,6 +1,6 @@
 import { useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowDownCircle, ArrowUpCircle, Wallet, TrendingUp, Upload } from "lucide-react";
+import { ArrowDownCircle, ArrowUpCircle, Wallet, TrendingUp, Upload, LayoutTemplate } from "lucide-react";
 import { StatCard } from "@/components/dashboard/StatCard";
 import { TransactionTable, Transaction } from "@/components/dashboard/TransactionTable";
 import { FinancialChart } from "@/components/dashboard/FinancialChart";
@@ -89,6 +89,10 @@ const Index = ({ transactions, setTransactions }: IndexProps) => {
             </div>
             
             <div className="flex gap-3">
+              <Button variant="outline" onClick={() => navigate("/templates")}>
+                <LayoutTemplate className="h-4 w-4 mr-2" />
+                Modelos de Relatório
+              </Button>
               <Button variant="outline" onClick={() => navigate("/importacao")}>
                 <Upload className="h-4 w-4 mr-2" />
                 Importação Financeira

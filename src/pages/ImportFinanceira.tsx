@@ -10,11 +10,15 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { Badge } from "@/components/ui/badge";
 import { FileUploadZone } from "@/components/import/FileUploadZone";
 import { ImportPreviewTable } from "@/components/import/ImportPreviewTable";
 import { ImportLogHistory } from "@/components/import/ImportLogHistory";
 import { ExtendedTransaction } from "@/types/importTypes";
+import { BankCode, bankLabels, TemplateWithRelations } from "@/types/templateTypes";
 import { detectDuplicates } from "@/lib/parsers/unifiedParser";
+import { detectBank } from "@/lib/bankDetection";
+import { findMatchingTemplate } from "@/lib/templateService";
 import { saveImportLog, createImportLog } from "@/lib/importLogs";
 import { Transaction } from "@/components/dashboard/TransactionTable";
 import { toast } from "sonner";
@@ -37,8 +41,10 @@ export default function ImportFinanceira({
   const [importInfo, setImportInfo] = useState({ fileName: "", fileType: "" });
   const [showHistory, setShowHistory] = useState(false);
   const [importedCount, setImportedCount] = useState(0);
+  const [detectedBank, setDetectedBank] = useState<BankCode>("generic");
+  const [matchedTemplate, setMatchedTemplate] = useState<TemplateWithRelations | null>(null);
 
-  const handleTransactionsParsed = (
+  const handleTransactionsParsed = async (
     parsedTransactions: ExtendedTransaction[],
     fileName: string,
     fileType: string
@@ -48,6 +54,22 @@ export default function ImportFinanceira({
     
     // Marca todas como selecionadas inicialmente
     const withSelection = withDuplicates.map((t) => ({ ...t, isSelected: true }));
+
+    // Detecta banco automaticamente a partir das descrições
+    const allDescriptions = parsedTransactions.map((t) => t.description).join(" ");
+    const bankResult = await detectBank(allDescriptions + " " + fileName);
+    setDetectedBank(bankResult.bankCode);
+
+    // Busca template correspondente
+    const template = await findMatchingTemplate(bankResult.bankCode);
+    setMatchedTemplate(template);
+
+    if (bankResult.bankCode !== "generic") {
+      toast.info(`Banco detectado: ${bankLabels[bankResult.bankCode]} (${bankResult.confidence}% confiança)`);
+    }
+    if (template) {
+      toast.info(`Template aplicado: ${template.name}`);
+    }
 
     setTransactions(withSelection);
     setImportInfo({ fileName, fileType });
@@ -99,6 +121,8 @@ export default function ImportFinanceira({
   const handleNewImport = () => {
     setTransactions([]);
     setImportInfo({ fileName: "", fileType: "" });
+    setDetectedBank("generic");
+    setMatchedTemplate(null);
     setStep("upload");
   };
 
@@ -207,8 +231,18 @@ export default function ImportFinanceira({
             <CardHeader>
               <CardTitle>Revisão de Transações</CardTitle>
               <CardDescription>
-                Arquivo: <strong>{importInfo.fileName}</strong> • Revise, edite ou remova
-                transações antes de confirmar a importação.
+                <span className="flex flex-wrap items-center gap-2">
+                  Arquivo: <strong>{importInfo.fileName}</strong>
+                  {detectedBank !== "generic" && (
+                    <Badge variant="secondary">{bankLabels[detectedBank]}</Badge>
+                  )}
+                  {matchedTemplate && (
+                    <Badge variant="outline">Template: {matchedTemplate.name}</Badge>
+                  )}
+                  <span className="text-muted-foreground">
+                    • Revise, edite ou remova transações antes de confirmar.
+                  </span>
+                </span>
               </CardDescription>
             </CardHeader>
             <CardContent>

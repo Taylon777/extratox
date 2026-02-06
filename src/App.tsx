@@ -6,6 +6,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Index from "./pages/Index";
 import ImportFinanceira from "./pages/ImportFinanceira";
+import Templates from "./pages/Templates";
 import NotFound from "./pages/NotFound";
 import { Transaction } from "./components/dashboard/TransactionTable";
 import { mockTransactions } from "./data/mockTransactions";
@@ -44,6 +45,7 @@ const App = () => {
                 />
               }
             />
+            <Route path="/templates" element={<Templates />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
