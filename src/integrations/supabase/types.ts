@@ -14,7 +14,157 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      bank_detection_patterns: {
+        Row: {
+          bank_code: Database["public"]["Enums"]["bank_code"]
+          created_at: string
+          id: string
+          pattern_type: string
+          pattern_value: string
+          priority: number | null
+        }
+        Insert: {
+          bank_code: Database["public"]["Enums"]["bank_code"]
+          created_at?: string
+          id?: string
+          pattern_type: string
+          pattern_value: string
+          priority?: number | null
+        }
+        Update: {
+          bank_code?: Database["public"]["Enums"]["bank_code"]
+          created_at?: string
+          id?: string
+          pattern_type?: string
+          pattern_value?: string
+          priority?: number | null
+        }
+        Relationships: []
+      }
+      report_templates: {
+        Row: {
+          bank_code: Database["public"]["Enums"]["bank_code"]
+          company_name: string | null
+          created_at: string
+          description: string | null
+          id: string
+          is_default: boolean | null
+          name: string
+          priority: number | null
+          updated_at: string
+        }
+        Insert: {
+          bank_code?: Database["public"]["Enums"]["bank_code"]
+          company_name?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_default?: boolean | null
+          name: string
+          priority?: number | null
+          updated_at?: string
+        }
+        Update: {
+          bank_code?: Database["public"]["Enums"]["bank_code"]
+          company_name?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_default?: boolean | null
+          name?: string
+          priority?: number | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      template_calculation_rules: {
+        Row: {
+          created_at: string
+          display_label: string
+          display_order: number | null
+          id: string
+          is_visible: boolean | null
+          rule_name: string
+          rule_type: string
+          source_categories: string[] | null
+          source_types: string[] | null
+          template_id: string
+        }
+        Insert: {
+          created_at?: string
+          display_label: string
+          display_order?: number | null
+          id?: string
+          is_visible?: boolean | null
+          rule_name: string
+          rule_type: string
+          source_categories?: string[] | null
+          source_types?: string[] | null
+          template_id: string
+        }
+        Update: {
+          created_at?: string
+          display_label?: string
+          display_order?: number | null
+          id?: string
+          is_visible?: boolean | null
+          rule_name?: string
+          rule_type?: string
+          source_categories?: string[] | null
+          source_types?: string[] | null
+          template_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "template_calculation_rules_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "report_templates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      template_sections: {
+        Row: {
+          config: Json | null
+          created_at: string
+          display_order: number
+          id: string
+          is_visible: boolean | null
+          section_type: string
+          template_id: string
+          title: string
+        }
+        Insert: {
+          config?: Json | null
+          created_at?: string
+          display_order?: number
+          id?: string
+          is_visible?: boolean | null
+          section_type: string
+          template_id: string
+          title: string
+        }
+        Update: {
+          config?: Json | null
+          created_at?: string
+          display_order?: number
+          id?: string
+          is_visible?: boolean | null
+          section_type?: string
+          template_id?: string
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "template_sections_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "report_templates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
@@ -23,7 +173,7 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
-      [_ in never]: never
+      bank_code: "itau" | "bradesco" | "bb" | "santander" | "nubank" | "generic"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +300,8 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      bank_code: ["itau", "bradesco", "bb", "santander", "nubank", "generic"],
+    },
   },
 } as const
