@@ -1,6 +1,7 @@
 import { useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowDownCircle, ArrowUpCircle, Wallet, TrendingUp, Upload, LayoutTemplate } from "lucide-react";
+import { ArrowDownCircle, ArrowUpCircle, Wallet, TrendingUp, Upload, LayoutTemplate, LogOut } from "lucide-react";
+import { useAuth } from "@/hooks/useAuth";
 import { StatCard } from "@/components/dashboard/StatCard";
 import { TransactionTable, Transaction } from "@/components/dashboard/TransactionTable";
 import { FinancialChart } from "@/components/dashboard/FinancialChart";
@@ -27,6 +28,7 @@ interface IndexProps {
 
 const Index = ({ transactions, setTransactions }: IndexProps) => {
   const navigate = useNavigate();
+  const { signOut } = useAuth();
   const [isImportOpen, setIsImportOpen] = useState(false);
   const [filters, setFilters] = useState<FilterState>({
     startDate: undefined,
@@ -97,7 +99,9 @@ const Index = ({ transactions, setTransactions }: IndexProps) => {
                 <Upload className="h-4 w-4 mr-2" />
                 Importação Financeira
               </Button>
-              
+              <Button variant="ghost" size="icon" onClick={signOut} title="Sair">
+                <LogOut className="h-4 w-4" />
+              </Button>
               <Dialog open={isImportOpen} onOpenChange={setIsImportOpen}>
                 <DialogTrigger asChild>
                   <Button variant="secondary">
