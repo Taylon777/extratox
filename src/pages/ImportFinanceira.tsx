@@ -1,7 +1,8 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, FileUp, History, CheckCircle2 } from "lucide-react";
+import { ArrowLeft, FileUp, History, CheckCircle2, Brain } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import {
   Dialog,
@@ -12,6 +13,7 @@ import {
 } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { FileUploadZone } from "@/components/import/FileUploadZone";
+import { PdfAnalysisUpload } from "@/components/import/PdfAnalysisUpload";
 import { ImportPreviewTable } from "@/components/import/ImportPreviewTable";
 import { ImportLogHistory } from "@/components/import/ImportLogHistory";
 import { ExtendedTransaction } from "@/types/importTypes";
@@ -210,18 +212,41 @@ export default function ImportFinanceira({
         {step === "upload" && (
           <Card className="max-w-4xl mx-auto">
             <CardHeader>
-              <CardTitle>Selecione o Arquivo</CardTitle>
+              <CardTitle>Importar Extrato</CardTitle>
               <CardDescription>
-                Escolha um arquivo de extrato bancário para importar. Os formatos PDF, OFX, Excel e
-                CSV são suportados.
+                Escolha entre importação tradicional ou análise inteligente com IA
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <FileUploadZone
-                onTransactionsParsed={handleTransactionsParsed}
-                isProcessing={isProcessing}
-                setIsProcessing={setIsProcessing}
-              />
+              <Tabs defaultValue="ai-analysis">
+                <TabsList className="grid w-full grid-cols-2">
+                  <TabsTrigger value="ai-analysis" className="flex items-center gap-2">
+                    <Brain className="h-4 w-4" />
+                    Análise IA (PDF)
+                  </TabsTrigger>
+                  <TabsTrigger value="traditional">
+                    <FileUp className="h-4 w-4 mr-2" />
+                    Upload Tradicional
+                  </TabsTrigger>
+                </TabsList>
+                <TabsContent value="ai-analysis" className="mt-4">
+                  <PdfAnalysisUpload
+                    onTransactionsExtracted={(txns) => {
+                      onImportComplete(txns);
+                      setImportedCount(txns.length);
+                      setImportInfo({ fileName: "Análise IA", fileType: "pdf" });
+                      setStep("success");
+                    }}
+                  />
+                </TabsContent>
+                <TabsContent value="traditional" className="mt-4">
+                  <FileUploadZone
+                    onTransactionsParsed={handleTransactionsParsed}
+                    isProcessing={isProcessing}
+                    setIsProcessing={setIsProcessing}
+                  />
+                </TabsContent>
+              </Tabs>
             </CardContent>
           </Card>
         )}
