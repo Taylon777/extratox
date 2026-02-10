@@ -11,6 +11,22 @@ import { AlertCircle, CheckCircle2, Lock } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { Navigate } from "react-router-dom";
 
+function validatePassword(password: string): { valid: boolean; message?: string } {
+  if (password.length < 8) {
+    return { valid: false, message: 'A senha deve ter pelo menos 8 caracteres.' };
+  }
+  if (!/[A-Z]/.test(password)) {
+    return { valid: false, message: 'A senha deve conter pelo menos uma letra maiúscula.' };
+  }
+  if (!/[a-z]/.test(password)) {
+    return { valid: false, message: 'A senha deve conter pelo menos uma letra minúscula.' };
+  }
+  if (!/[0-9]/.test(password)) {
+    return { valid: false, message: 'A senha deve conter pelo menos um número.' };
+  }
+  return { valid: true };
+}
+
 export default function Auth() {
   const { user, loading } = useAuth();
   const navigate = useNavigate();
@@ -53,8 +69,9 @@ export default function Auth() {
     setSuccess(null);
     setIsSubmitting(true);
 
-    if (password.length < 6) {
-      setError("A senha deve ter pelo menos 6 caracteres.");
+    const passwordCheck = validatePassword(password);
+    if (!passwordCheck.valid) {
+      setError(passwordCheck.message!);
       setIsSubmitting(false);
       return;
     }
@@ -143,11 +160,11 @@ export default function Auth() {
                   <Input
                     id="signup-password"
                     type="password"
-                    placeholder="Mínimo 6 caracteres"
+                    placeholder="Mínimo 8 caracteres (maiúscula, minúscula, número)"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     required
-                    minLength={6}
+                    minLength={8}
                     autoComplete="new-password"
                   />
                 </div>
