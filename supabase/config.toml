@@ -1,1 +1,4 @@
 project_id = "enkntfhinasfpsdvlrgn"
+
+[functions.analyze-pdf]
+verify_jwt = false

@@ -41,6 +41,51 @@ export type Database = {
         }
         Relationships: []
       }
+      document_uploads: {
+        Row: {
+          analysis_result: Json | null
+          created_at: string
+          error_message: string | null
+          file_hash: string | null
+          file_name: string
+          file_path: string
+          file_size: number
+          id: string
+          page_count: number | null
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          analysis_result?: Json | null
+          created_at?: string
+          error_message?: string | null
+          file_hash?: string | null
+          file_name: string
+          file_path: string
+          file_size: number
+          id?: string
+          page_count?: number | null
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          analysis_result?: Json | null
+          created_at?: string
+          error_message?: string | null
+          file_hash?: string | null
+          file_name?: string
+          file_path?: string
+          file_size?: number
+          id?: string
+          page_count?: number | null
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       report_templates: {
         Row: {
           bank_code: Database["public"]["Enums"]["bank_code"]
