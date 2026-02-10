@@ -43,11 +43,12 @@ export function createImportLog(
   importedTransactions: number,
   removedTransactions: number,
   editedTransactions: number,
-  duplicatesDetected: number
+  duplicatesDetected: number,
+  userId?: string
 ): ImportLog {
   return {
     id: `log-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-    userId: "current-user", // Em produção, usar ID real do usuário
+    userId: userId || "anonymous",
     timestamp: new Date(),
     fileName,
     fileType,
