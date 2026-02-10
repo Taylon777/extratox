@@ -20,7 +20,14 @@ export function detectFileType(file: File): FileType {
   return "unknown";
 }
 
+const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
+const MAX_TRANSACTIONS = 10000;
+
 export async function parseFile(file: File, pdfText?: string): Promise<ExtendedTransaction[]> {
+  if (file.size > MAX_FILE_SIZE) {
+    throw new Error("Arquivo muito grande. O tamanho máximo é 10MB.");
+  }
+
   const fileType = detectFileType(file);
 
   let basicTransactions: Transaction[] = [];
@@ -61,10 +68,12 @@ function readFileAsText(file: File): Promise<string> {
 }
 
 function convertToExtended(transactions: Transaction[]): ExtendedTransaction[] {
-  return transactions.map((t) => ({
+  const limited = transactions.slice(0, MAX_TRANSACTIONS);
+  return limited.map((t) => ({
     ...t,
+    description: t.description?.slice(0, 500) || '',
     paymentMethod: detectPaymentMethod(t.description, t.category),
-    originalDescription: t.description,
+    originalDescription: t.description?.slice(0, 500) || '',
     isDuplicate: false,
     isSelected: true,
   }));
