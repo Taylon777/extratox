@@ -52,6 +52,7 @@ export type Database = {
           name: string
           priority: number | null
           updated_at: string
+          user_id: string | null
         }
         Insert: {
           bank_code?: Database["public"]["Enums"]["bank_code"]
@@ -63,6 +64,7 @@ export type Database = {
           name: string
           priority?: number | null
           updated_at?: string
+          user_id?: string | null
         }
         Update: {
           bank_code?: Database["public"]["Enums"]["bank_code"]
@@ -74,6 +76,7 @@ export type Database = {
           name?: string
           priority?: number | null
           updated_at?: string
+          user_id?: string | null
         }
         Relationships: []
       }
