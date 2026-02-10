@@ -91,9 +91,15 @@ export async function createTemplate(
   sections: Omit<TemplateSectionInsert, "template_id">[],
   rules: Omit<CalculationRuleInsert, "template_id">[]
 ): Promise<TemplateWithRelations> {
+  // Ensure user_id is set from the current session
+  const { data: { session } } = await supabase.auth.getSession();
+  if (!session?.user?.id) throw new Error('Você precisa estar autenticado.');
+
+  const templateWithUser = { ...template, user_id: session.user.id };
+
   const { data: created, error } = await supabase
     .from("report_templates")
-    .insert(template)
+    .insert(templateWithUser)
     .select()
     .single();
 
