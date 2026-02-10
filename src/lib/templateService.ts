@@ -10,6 +10,16 @@ import {
   TemplateWithRelations,
 } from "@/types/templateTypes";
 
+// === Safe Error Handling ===
+
+function getSafeErrorMessage(error: any, operation: string): string {
+  console.error(`Database operation failed (${operation}):`, error);
+  if (error?.code === '23505') return 'Um registro duplicado foi detectado.';
+  if (error?.code === '23503') return 'Referência inválida. Verifique os dados.';
+  if (error?.code === '42501') return 'Você não tem permissão para esta operação.';
+  return 'Operação falhou. Tente novamente.';
+}
+
 // === CRUD Templates ===
 
 export async function fetchTemplates(): Promise<TemplateWithRelations[]> {
@@ -18,7 +28,7 @@ export async function fetchTemplates(): Promise<TemplateWithRelations[]> {
     .select("*")
     .order("priority", { ascending: false });
 
-  if (error) throw new Error(`Erro ao buscar templates: ${error.message}`);
+  if (error) throw new Error(getSafeErrorMessage(error, 'fetchTemplates'));
   if (!templates) return [];
 
   // Busca seções e regras para cada template
@@ -87,7 +97,7 @@ export async function createTemplate(
     .select()
     .single();
 
-  if (error || !created) throw new Error(`Erro ao criar template: ${error?.message}`);
+  if (error || !created) throw new Error(getSafeErrorMessage(error, 'createTemplate'));
 
   // Insere seções
   if (sections.length > 0) {
@@ -121,7 +131,7 @@ export async function updateTemplate(
     .update(template)
     .eq("id", id);
 
-  if (error) throw new Error(`Erro ao atualizar template: ${error.message}`);
+  if (error) throw new Error(getSafeErrorMessage(error, 'updateTemplate'));
 
   // Substitui seções se fornecidas
   if (sections) {
@@ -148,7 +158,7 @@ export async function updateTemplate(
 
 export async function deleteTemplate(id: string): Promise<void> {
   const { error } = await supabase.from("report_templates").delete().eq("id", id);
-  if (error) throw new Error(`Erro ao excluir template: ${error.message}`);
+  if (error) throw new Error(getSafeErrorMessage(error, 'deleteTemplate'));
 }
 
 // === Template Matching ===
