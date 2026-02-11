@@ -1,8 +1,16 @@
 import { useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowDownCircle, ArrowUpCircle, Wallet, TrendingUp, Upload, LayoutTemplate, LogOut } from "lucide-react";
+import {
+  FileCheck,
+  Building2,
+  AlertTriangle,
+  Receipt,
+  FileText,
+  Bell,
+  Upload,
+} from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
-import { StatCard } from "@/components/dashboard/StatCard";
+import { DashboardStatCard } from "@/components/dashboard/DashboardStatCard";
 import { TransactionTable, Transaction } from "@/components/dashboard/TransactionTable";
 import { FinancialChart } from "@/components/dashboard/FinancialChart";
 import { CategoryPieChart } from "@/components/dashboard/CategoryPieChart";
@@ -12,13 +20,14 @@ import { TransactionFilters, FilterState } from "@/components/dashboard/Transact
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
-import { 
+import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import { SidebarTrigger } from "@/components/ui/sidebar";
 import { monthlyData } from "@/data/mockTransactions";
 
 interface IndexProps {
@@ -28,7 +37,6 @@ interface IndexProps {
 
 const Index = ({ transactions, setTransactions }: IndexProps) => {
   const navigate = useNavigate();
-  const { signOut } = useAuth();
   const [isImportOpen, setIsImportOpen] = useState(false);
   const [filters, setFilters] = useState<FilterState>({
     startDate: undefined,
@@ -37,12 +45,12 @@ const Index = ({ transactions, setTransactions }: IndexProps) => {
   });
 
   const handleTransactionsImported = (newTransactions: Transaction[]) => {
-    setTransactions(prev => [...newTransactions, ...prev]);
+    setTransactions((prev) => [...newTransactions, ...prev]);
     setTimeout(() => setIsImportOpen(false), 1500);
   };
 
   const filteredTransactions = useMemo(() => {
-    return transactions.filter(t => {
+    return transactions.filter((t) => {
       const transactionDate = new Date(t.date);
       if (filters.startDate && transactionDate < filters.startDate) return false;
       if (filters.endDate) {
@@ -56,17 +64,15 @@ const Index = ({ transactions, setTransactions }: IndexProps) => {
   }, [transactions, filters]);
 
   const totalEntradas = filteredTransactions
-    .filter(t => t.type === "entrada")
+    .filter((t) => t.type === "entrada")
     .reduce((acc, t) => acc + t.value, 0);
 
   const totalSaidas = filteredTransactions
-    .filter(t => t.type === "saida")
+    .filter((t) => t.type === "saida")
     .reduce((acc, t) => acc + t.value, 0);
 
-  const saldoLiquido = totalEntradas - totalSaidas;
-
-  const categoryDataEntradas = calculateCategoryData(filteredTransactions, 'entrada');
-  const categoryDataSaidas = calculateCategoryData(filteredTransactions, 'saida');
+  const categoryDataEntradas = calculateCategoryData(filteredTransactions, "entrada");
+  const categoryDataSaidas = calculateCategoryData(filteredTransactions, "saida");
 
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat("pt-BR", {
@@ -75,114 +81,139 @@ const Index = ({ transactions, setTransactions }: IndexProps) => {
     }).format(value);
   };
 
+  // Accounting stat cards data
+  const statCards = [
+    {
+      title: "CNDs Emitidas",
+      value: 47,
+      icon: FileCheck,
+      iconColor: "text-success",
+      iconBg: "bg-success/10",
+    },
+    {
+      title: "Empresas Regulares",
+      value: 32,
+      icon: Building2,
+      iconColor: "text-info",
+      iconBg: "bg-info/10",
+    },
+    {
+      title: "Empresas com Pendência",
+      value: 8,
+      icon: AlertTriangle,
+      iconColor: "text-accent",
+      iconBg: "bg-accent/10",
+    },
+    {
+      title: "ICMS a Recolher",
+      value: formatCurrency(totalSaidas),
+      icon: Receipt,
+      iconColor: "text-destructive",
+      iconBg: "bg-destructive/10",
+    },
+    {
+      title: "Notas Importadas",
+      value: transactions.length,
+      icon: FileText,
+      iconColor: "text-primary",
+      iconBg: "bg-primary/10",
+    },
+    {
+      title: "Alertas Fiscais",
+      value: 3,
+      icon: Bell,
+      iconColor: "text-warning",
+      iconBg: "bg-warning/10",
+    },
+  ];
+
   return (
-    <div className="min-h-screen bg-background">
-      <header className="border-b bg-card">
-        <div className="container mx-auto px-4 py-6">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-primary/10">
-                <Wallet className="h-6 w-6 text-primary" />
-              </div>
-              <div>
-                <h1 className="text-2xl font-bold tracking-tight">Dashboard Financeiro</h1>
-                <p className="text-sm text-muted-foreground">Visão geral das suas finanças</p>
-              </div>
+    <div className="flex-1 min-h-screen bg-background">
+      {/* Header */}
+      <header className="border-b bg-card sticky top-0 z-30">
+        <div className="px-6 py-4 flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <SidebarTrigger className="-ml-1" />
+            <div>
+              <h1 className="text-xl font-bold tracking-tight text-foreground">
+                Dashboard
+              </h1>
+              <p className="text-xs text-muted-foreground">
+                Visão geral fiscal e financeira
+              </p>
             </div>
-            
-            <div className="flex gap-3">
-              <Button variant="outline" onClick={() => navigate("/templates")}>
-                <LayoutTemplate className="h-4 w-4 mr-2" />
-                Modelos de Relatório
-              </Button>
-              <Button variant="outline" onClick={() => navigate("/importacao")}>
-                <Upload className="h-4 w-4 mr-2" />
-                Importação Financeira
-              </Button>
-              <Button variant="ghost" size="icon" onClick={signOut} title="Sair">
-                <LogOut className="h-4 w-4" />
-              </Button>
-              <Dialog open={isImportOpen} onOpenChange={setIsImportOpen}>
-                <DialogTrigger asChild>
-                  <Button variant="secondary">
-                    <Upload className="h-4 w-4 mr-2" />
-                    Importar Rápido
-                  </Button>
-                </DialogTrigger>
-                <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-                  <DialogHeader>
-                    <DialogTitle>Importar Extrato Bancário</DialogTitle>
-                  </DialogHeader>
-                  <Tabs defaultValue="file" className="mt-4">
-                    <TabsList className="grid w-full grid-cols-2">
-                      <TabsTrigger value="file">Arquivo</TabsTrigger>
-                      <TabsTrigger value="text">Texto</TabsTrigger>
-                    </TabsList>
-                    <TabsContent value="file" className="mt-4">
-                      <FileUpload onTransactionsImported={handleTransactionsImported} />
-                    </TabsContent>
-                    <TabsContent value="text" className="mt-4">
-                      <TextImport onTransactionsImported={handleTransactionsImported} />
-                    </TabsContent>
-                  </Tabs>
-                </DialogContent>
-              </Dialog>
-            </div>
+          </div>
+
+          <div className="flex gap-3">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => navigate("/importacao")}
+            >
+              <Upload className="h-4 w-4 mr-2" />
+              Importação
+            </Button>
+            <Dialog open={isImportOpen} onOpenChange={setIsImportOpen}>
+              <DialogTrigger asChild>
+                <Button size="sm" className="bg-accent hover:bg-accent/90 text-accent-foreground">
+                  <Upload className="h-4 w-4 mr-2" />
+                  Importar Rápido
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+                <DialogHeader>
+                  <DialogTitle>Importar Extrato Bancário</DialogTitle>
+                </DialogHeader>
+                <Tabs defaultValue="file" className="mt-4">
+                  <TabsList className="grid w-full grid-cols-2">
+                    <TabsTrigger value="file">Arquivo</TabsTrigger>
+                    <TabsTrigger value="text">Texto</TabsTrigger>
+                  </TabsList>
+                  <TabsContent value="file" className="mt-4">
+                    <FileUpload onTransactionsImported={handleTransactionsImported} />
+                  </TabsContent>
+                  <TabsContent value="text" className="mt-4">
+                    <TextImport onTransactionsImported={handleTransactionsImported} />
+                  </TabsContent>
+                </Tabs>
+              </DialogContent>
+            </Dialog>
           </div>
         </div>
       </header>
 
-      <main className="container mx-auto px-4 py-8 space-y-8">
+      <main className="p-6 space-y-6">
+        {/* Stat Cards Row */}
+        <section className="grid gap-4 grid-cols-2 md:grid-cols-3 lg:grid-cols-6">
+          {statCards.map((card) => (
+            <DashboardStatCard key={card.title} {...card} />
+          ))}
+        </section>
+
+        {/* Filters */}
         <section>
           <TransactionFilters filters={filters} onFiltersChange={setFilters} />
         </section>
 
-        <section className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-          <StatCard
-            title="Total Entradas"
-            value={formatCurrency(totalEntradas)}
-            description={filters.excludedCategories.length > 0 ? "Filtrado" : "Período atual"}
-            icon={ArrowUpCircle}
-            variant="success"
-            trend={{ value: 12.5, isPositive: true }}
-          />
-          <StatCard
-            title="Total Saídas"
-            value={formatCurrency(totalSaidas)}
-            description={filters.excludedCategories.length > 0 ? "Filtrado" : "Período atual"}
-            icon={ArrowDownCircle}
-            variant="danger"
-            trend={{ value: 3.2, isPositive: false }}
-          />
-          <StatCard
-            title="Saldo Líquido"
-            value={formatCurrency(saldoLiquido)}
-            description="Entradas - Saídas"
-            icon={TrendingUp}
-            variant={saldoLiquido >= 0 ? "success" : "danger"}
-          />
-          <StatCard
-            title="Transações"
-            value={`${filteredTransactions.length}/${transactions.length}`}
-            description={filteredTransactions.length !== transactions.length ? "Filtrado/Total" : "Total de lançamentos"}
-            icon={Wallet}
-          />
-        </section>
-
+        {/* Charts Grid */}
         <section className="grid gap-6 lg:grid-cols-3">
           <div className="lg:col-span-2">
             <FinancialChart data={monthlyData} />
           </div>
-          <div className="space-y-6">
-            <CategoryPieChart data={categoryDataEntradas} title="Entradas por Categoria" />
+          <div>
+            <CategoryPieChart
+              data={categoryDataEntradas}
+              title="Entradas por Categoria"
+            />
           </div>
         </section>
 
+        {/* Table + Pie */}
         <section className="grid gap-6 lg:grid-cols-3">
           <div className="lg:col-span-2">
             <Card>
               <CardHeader>
-                <CardTitle>
+                <CardTitle className="text-base">
                   Transações Recentes
                   {filteredTransactions.length !== transactions.length && (
                     <span className="text-sm font-normal text-muted-foreground ml-2">
@@ -197,7 +228,10 @@ const Index = ({ transactions, setTransactions }: IndexProps) => {
             </Card>
           </div>
           <div>
-            <CategoryPieChart data={categoryDataSaidas} title="Saídas por Categoria" />
+            <CategoryPieChart
+              data={categoryDataSaidas}
+              title="Saídas por Categoria"
+            />
           </div>
         </section>
       </main>
@@ -205,7 +239,10 @@ const Index = ({ transactions, setTransactions }: IndexProps) => {
   );
 };
 
-function calculateCategoryData(transactions: Transaction[], type: 'entrada' | 'saida') {
+function calculateCategoryData(
+  transactions: Transaction[],
+  type: "entrada" | "saida"
+) {
   const categoryColors: Record<string, string> = {
     pix: "#8b5cf6",
     transferencia: "#3b82f6",
@@ -224,7 +261,7 @@ function calculateCategoryData(transactions: Transaction[], type: 'entrada' | 's
     outros: "Outros",
   };
 
-  const filtered = transactions.filter(t => t.type === type);
+  const filtered = transactions.filter((t) => t.type === type);
   const grouped: Record<string, number> = {};
 
   for (const t of filtered) {

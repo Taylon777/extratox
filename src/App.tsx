@@ -6,6 +6,8 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/hooks/useAuth";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
+import { SidebarProvider } from "@/components/ui/sidebar";
+import { AppSidebar } from "@/components/AppSidebar";
 import Index from "./pages/Index";
 import ImportFinanceira from "./pages/ImportFinanceira";
 import Templates from "./pages/Templates";
@@ -15,6 +17,15 @@ import { Transaction } from "./components/dashboard/TransactionTable";
 import { mockTransactions } from "./data/mockTransactions";
 
 const queryClient = new QueryClient();
+
+const AppLayout = ({ children }: { children: React.ReactNode }) => (
+  <SidebarProvider>
+    <div className="min-h-screen flex w-full">
+      <AppSidebar />
+      {children}
+    </div>
+  </SidebarProvider>
+);
 
 const App = () => {
   const [transactions, setTransactions] = useState<Transaction[]>(mockTransactions);
@@ -36,10 +47,12 @@ const App = () => {
                 path="/"
                 element={
                   <ProtectedRoute>
-                    <Index
-                      transactions={transactions}
-                      setTransactions={setTransactions}
-                    />
+                    <AppLayout>
+                      <Index
+                        transactions={transactions}
+                        setTransactions={setTransactions}
+                      />
+                    </AppLayout>
                   </ProtectedRoute>
                 }
               />
@@ -47,10 +60,12 @@ const App = () => {
                 path="/importacao"
                 element={
                   <ProtectedRoute>
-                    <ImportFinanceira
-                      existingTransactions={transactions}
-                      onImportComplete={handleImportComplete}
-                    />
+                    <AppLayout>
+                      <ImportFinanceira
+                        existingTransactions={transactions}
+                        onImportComplete={handleImportComplete}
+                      />
+                    </AppLayout>
                   </ProtectedRoute>
                 }
               />
@@ -58,11 +73,12 @@ const App = () => {
                 path="/templates"
                 element={
                   <ProtectedRoute>
-                    <Templates />
+                    <AppLayout>
+                      <Templates />
+                    </AppLayout>
                   </ProtectedRoute>
                 }
               />
-              {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
             </Routes>
           </BrowserRouter>
