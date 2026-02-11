@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, FileUp, History, CheckCircle2, Brain } from "lucide-react";
+import { FileUp, History, CheckCircle2, Brain } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -133,37 +133,32 @@ export default function ImportFinanceira({
   };
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="flex-1 min-h-screen bg-background">
       {/* Header */}
-      <header className="border-b bg-card">
-        <div className="container mx-auto px-4 py-6">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <Button variant="ghost" size="icon" onClick={handleBackToDashboard}>
-                <ArrowLeft className="h-5 w-5" />
-              </Button>
-              <div className="flex items-center gap-3">
-                <div className="p-2 rounded-lg bg-primary/10">
-                  <FileUp className="h-6 w-6 text-primary" />
-                </div>
-                <div>
-                  <h1 className="text-2xl font-bold tracking-tight">Importação Financeira</h1>
-                  <p className="text-sm text-muted-foreground">
-                    Importe e revise transações de extratos bancários
-                  </p>
-                </div>
+      <header className="border-b bg-card sticky top-0 z-30">
+        <div className="px-6 py-4 flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-lg bg-primary/10">
+                <FileUp className="h-5 w-5 text-primary" />
+              </div>
+              <div>
+                <h1 className="text-xl font-bold tracking-tight">Importação Financeira</h1>
+                <p className="text-xs text-muted-foreground">
+                  Importe e revise transações de extratos bancários
+                </p>
               </div>
             </div>
-
-            <Button variant="outline" onClick={() => setShowHistory(true)}>
-              <History className="h-4 w-4 mr-2" />
-              Histórico
-            </Button>
           </div>
+
+          <Button variant="outline" size="sm" onClick={() => setShowHistory(true)}>
+            <History className="h-4 w-4 mr-2" />
+            Histórico
+          </Button>
         </div>
       </header>
 
-      <main className="container mx-auto px-4 py-8">
+      <main className="p-6">
         {/* Step Indicator */}
         <div className="flex items-center justify-center mb-8">
           <div className="flex items-center gap-2">
@@ -285,8 +280,8 @@ export default function ImportFinanceira({
           <Card className="max-w-2xl mx-auto text-center">
             <CardContent className="pt-8 pb-8">
               <div className="flex flex-col items-center gap-6">
-                <div className="p-4 rounded-full bg-emerald-100 dark:bg-emerald-900">
-                  <CheckCircle2 className="h-12 w-12 text-emerald-600" />
+                <div className="p-4 rounded-full bg-success/10">
+                  <CheckCircle2 className="h-12 w-12 text-success" />
                 </div>
                 <div>
                   <h2 className="text-2xl font-bold mb-2">Importação Concluída!</h2>
