@@ -1,5 +1,6 @@
 import { Transaction } from "@/components/dashboard/TransactionTable";
 import * as XLSX from "xlsx";
+import { validateDate, validateValue, sanitizeDescription } from "./validation";
 
 export interface ExtendedTransaction extends Transaction {
   compensationDate?: string;
@@ -51,24 +52,34 @@ export function parseExcel(file: File): Promise<ExtendedTransaction[]> {
           if (!description) continue;
 
           const value = parseValue(valueStr);
+          const validatedValue = validateValue(value);
+          if (validatedValue === null) continue;
+
           const fee = parseValue(feeStr);
           const parsedDate = parseExcelDate(dateStr);
-          const compDate = compDateIdx !== -1 ? parseExcelDate(row[compDateIdx]) : undefined;
+          const validDate = validateDate(parsedDate);
+          if (!validDate) continue;
 
-          const isCredit = typeStr.includes("credit") || typeStr.includes("entrada") || typeStr === "c" || value > 0;
+          const compDate = compDateIdx !== -1 ? parseExcelDate(row[compDateIdx]) : undefined;
+          const validCompDate = compDate ? (validateDate(compDate) ?? undefined) : undefined;
+
+          const cleanDesc = sanitizeDescription(description);
+          if (!cleanDesc) continue;
+
+          const isCredit = typeStr.includes("credit") || typeStr.includes("entrada") || typeStr === "c" || validatedValue > 0;
           const transactionType: "entrada" | "saida" = isCredit ? "entrada" : "saida";
 
-          const { category, paymentMethod } = detectCategoryAndMethod(description);
+          const { category, paymentMethod } = detectCategoryAndMethod(cleanDesc);
 
           transactions.push({
             id: `excel-${i}-${Date.now()}`,
-            date: parsedDate,
-            compensationDate: compDate,
-            description: description,
-            originalDescription: description,
+            date: validDate,
+            compensationDate: validCompDate,
+            description: cleanDesc,
+            originalDescription: cleanDesc,
             category,
             type: transactionType,
-            value: Math.abs(value),
+            value: Math.abs(validatedValue),
             paymentMethod,
             bankFee: fee > 0 ? fee : undefined,
             isDuplicate: false,

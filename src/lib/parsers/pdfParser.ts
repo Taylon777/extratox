@@ -1,4 +1,5 @@
 import { Transaction } from "@/components/dashboard/TransactionTable";
+import { validateDate, validateValue, sanitizeDescription } from "./validation";
 
 // Parser para extrair transações de texto extraído de PDF
 export function parsePDFText(text: string): Transaction[] {
@@ -69,14 +70,19 @@ function parseLine(line: string): Omit<Transaction, 'id'> | null {
     if (!description) return null;
 
     const parsedDate = parsePDFDate(dateStr);
-    const cleanedDesc = cleanDescription(description);
+    const validDate = validateDate(parsedDate);
+    if (!validDate) return null;
+    const validValue = validateValue(value);
+    if (validValue === null) return null;
+    const cleanedDesc = sanitizeDescription(cleanDescription(description));
+    if (!cleanedDesc) return null;
 
     return {
-      date: parsedDate,
+      date: validDate,
       description: cleanedDesc,
       category: detectCategory(cleanedDesc),
-      type: value >= 0 ? 'entrada' : 'saida',
-      value: Math.abs(value),
+      type: validValue >= 0 ? 'entrada' : 'saida',
+      value: Math.abs(validValue),
     };
   }
 
@@ -87,14 +93,19 @@ function parseLine(line: string): Omit<Transaction, 'id'> | null {
   if (!description) return null;
 
   const parsedDate = parsePDFDate(dateStr);
-  const cleanedDesc = cleanDescription(description);
+  const validDate = validateDate(parsedDate);
+  if (!validDate) return null;
+  const validValue = validateValue(value);
+  if (validValue === null) return null;
+  const cleanedDesc = sanitizeDescription(cleanDescription(description));
+  if (!cleanedDesc) return null;
 
   return {
-    date: parsedDate,
+    date: validDate,
     description: cleanedDesc,
     category: detectCategory(cleanedDesc),
-    type: value >= 0 ? 'entrada' : 'saida',
-    value: Math.abs(value),
+    type: validValue >= 0 ? 'entrada' : 'saida',
+    value: Math.abs(validValue),
   };
 }
 

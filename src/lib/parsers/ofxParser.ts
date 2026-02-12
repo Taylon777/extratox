@@ -1,4 +1,5 @@
 import { Transaction } from "@/components/dashboard/TransactionTable";
+import { validateDate, validateValue, sanitizeDescription } from "./validation";
 
 export function parseOFX(content: string): Transaction[] {
   const transactions: Transaction[] = [];
@@ -18,15 +19,23 @@ export function parseOFX(content: string): Transaction[] {
 
     if (datePosted && amount) {
       const value = parseFloat(amount.replace(',', '.'));
+      const validatedValue = validateValue(value);
+      if (validatedValue === null) continue;
+
       const parsedDate = parseOFXDate(datePosted);
+      const validDate = validateDate(parsedDate);
+      if (!validDate) continue;
+
+      const cleanDesc = sanitizeDescription(memo.trim());
+      if (!cleanDesc) continue;
 
       transactions.push({
         id: `ofx-${fitId || Date.now()}-${transactions.length}`,
-        date: parsedDate,
-        description: memo.trim(),
-        category: detectCategory(memo, trnType),
-        type: value >= 0 ? 'entrada' : 'saida',
-        value: Math.abs(value),
+        date: validDate,
+        description: cleanDesc,
+        category: detectCategory(cleanDesc, trnType),
+        type: validatedValue >= 0 ? 'entrada' : 'saida',
+        value: Math.abs(validatedValue),
       });
     }
   }
