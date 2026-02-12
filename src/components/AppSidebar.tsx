@@ -7,10 +7,12 @@ import {
   AlertTriangle,
   Settings,
   LogOut,
-  ChevronLeft,
+  Sun,
+  Moon,
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useAuth } from "@/hooks/useAuth";
+import { useTheme } from "@/hooks/useTheme";
 import {
   Sidebar,
   SidebarContent,
@@ -41,6 +43,7 @@ const fiscalItems = [
 
 export function AppSidebar() {
   const { signOut } = useAuth();
+  const { theme, toggleTheme } = useTheme();
   const { state } = useSidebar();
   const collapsed = state === "collapsed";
 
@@ -133,6 +136,25 @@ export function AppSidebar() {
                 <Settings className="h-[18px] w-[18px] flex-shrink-0" />
                 {!collapsed && <span className="text-sm">Configurações</span>}
               </NavLink>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+          <SidebarMenuItem>
+            <SidebarMenuButton tooltip={theme === "dark" ? "Tema Claro" : "Tema Escuro"}>
+              <button
+                onClick={toggleTheme}
+                className="flex items-center gap-3 w-full text-sidebar-foreground/80 hover:text-sidebar-foreground transition-colors"
+              >
+                {theme === "dark" ? (
+                  <Sun className="h-[18px] w-[18px] flex-shrink-0" />
+                ) : (
+                  <Moon className="h-[18px] w-[18px] flex-shrink-0" />
+                )}
+                {!collapsed && (
+                  <span className="text-sm">
+                    {theme === "dark" ? "Tema Claro" : "Tema Escuro"}
+                  </span>
+                )}
+              </button>
             </SidebarMenuButton>
           </SidebarMenuItem>
           <SidebarMenuItem>
