@@ -1,4 +1,5 @@
 import { Transaction } from "@/components/dashboard/TransactionTable";
+import { validateDate, validateValue, sanitizeDescription } from "./validation";
 
 export function parseCSV(content: string): Transaction[] {
   const lines = content.trim().split('\n');
@@ -39,15 +40,23 @@ export function parseCSV(content: string): Transaction[] {
       const value = parseFloat(valueStr);
 
       if (!isNaN(value) && description) {
+        const validatedValue = validateValue(value);
+        if (validatedValue === null) continue;
+
         const parsedDate = parseDate(dateStr);
+        const validDate = validateDate(parsedDate);
+        if (!validDate) continue;
+
+        const cleanDesc = sanitizeDescription(description);
+        if (!cleanDesc) continue;
         
         transactions.push({
           id: `csv-${i}-${Date.now()}`,
-          date: parsedDate,
-          description: description,
-          category: detectCategory(description),
-          type: value >= 0 ? 'entrada' : 'saida',
-          value: Math.abs(value),
+          date: validDate,
+          description: cleanDesc,
+          category: detectCategory(cleanDesc),
+          type: validatedValue >= 0 ? 'entrada' : 'saida',
+          value: Math.abs(validatedValue),
         });
       }
     }
