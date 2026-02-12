@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { format } from "date-fns";
+import { format, startOfMonth, endOfMonth, subDays, subMonths, startOfDay, endOfDay } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { CalendarIcon, Filter, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -14,61 +14,81 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
-import { Transaction } from "./TransactionTable";
 
 export interface FilterState {
   startDate: Date | undefined;
   endDate: Date | undefined;
-  excludedCategories: Transaction["category"][];
+  excludedCategories: string[];
 }
 
 interface TransactionFiltersProps {
   filters: FilterState;
   onFiltersChange: (filters: FilterState) => void;
+  transactions?: { category: string; type: string; value: number }[];
 }
 
-const categoryOptions: { value: Transaction["category"]; label: string; color: string }[] = [
-  { value: "pix", label: "Pix", color: "bg-violet-100 text-violet-800 dark:bg-violet-900 dark:text-violet-300" },
-  { value: "transferencia", label: "Transferência", color: "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300" },
-  { value: "cartao_debito", label: "Vendas – Disponível Débito", color: "bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-300" },
-  { value: "cartao_credito", label: "Vendas – Disponível Crédito", color: "bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-300" },
-  { value: "taxas", label: "Taxas", color: "bg-slate-100 text-slate-800 dark:bg-slate-900 dark:text-slate-300" },
-  { value: "outros", label: "Outros", color: "bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-300" },
+const categoryLabels: Record<string, string> = {
+  pix: "Pix",
+  transferencia: "Transferência",
+  cartao_debito: "Vendas – Disponível Débito",
+  cartao_credito: "Vendas – Disponível Crédito",
+  taxas: "Taxas",
+  outros: "Outros",
+};
+
+const categoryColors: Record<string, string> = {
+  pix: "bg-violet-100 text-violet-800 dark:bg-violet-900 dark:text-violet-300",
+  transferencia: "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300",
+  cartao_debito: "bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-300",
+  cartao_credito: "bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-300",
+  taxas: "bg-slate-100 text-slate-800 dark:bg-slate-900 dark:text-slate-300",
+  outros: "bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-300",
+};
+
+const datePresets = [
+  { label: "Hoje", getRange: () => ({ start: startOfDay(new Date()), end: endOfDay(new Date()) }) },
+  { label: "Últimos 7 dias", getRange: () => ({ start: startOfDay(subDays(new Date(), 6)), end: endOfDay(new Date()) }) },
+  { label: "Últimos 30 dias", getRange: () => ({ start: startOfDay(subDays(new Date(), 29)), end: endOfDay(new Date()) }) },
+  { label: "Este mês", getRange: () => ({ start: startOfMonth(new Date()), end: endOfMonth(new Date()) }) },
+  { label: "Mês anterior", getRange: () => { const prev = subMonths(new Date(), 1); return { start: startOfMonth(prev), end: endOfMonth(prev) }; } },
 ];
 
-export function TransactionFilters({ filters, onFiltersChange }: TransactionFiltersProps) {
-  const [isOpen, setIsOpen] = useState(false);
+const formatBRL = (v: number) =>
+  new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(v);
 
-  const handleStartDateChange = (date: Date | undefined) => {
-    onFiltersChange({ ...filters, startDate: date });
+export function TransactionFilters({ filters, onFiltersChange, transactions = [] }: TransactionFiltersProps) {
+  // Derive available categories from actual data
+  const categorySummary = transactions.reduce<Record<string, { count: number; total: number }>>((acc, t) => {
+    if (!acc[t.category]) acc[t.category] = { count: 0, total: 0 };
+    acc[t.category].count++;
+    acc[t.category].total += Number(t.value);
+    return acc;
+  }, {});
+
+  const availableCategories = Object.entries(categorySummary)
+    .filter(([_, s]) => s.total > 0)
+    .map(([cat, s]) => ({ value: cat, label: categoryLabels[cat] || cat, color: categoryColors[cat] || "", ...s }));
+
+  const handlePreset = (preset: typeof datePresets[0]) => {
+    const { start, end } = preset.getRange();
+    onFiltersChange({ ...filters, startDate: start, endDate: end });
   };
 
-  const handleEndDateChange = (date: Date | undefined) => {
-    onFiltersChange({ ...filters, endDate: date });
-  };
-
-  const handleCategoryToggle = (category: Transaction["category"]) => {
+  const handleCategoryToggle = (category: string) => {
     const isExcluded = filters.excludedCategories.includes(category);
     const newExcluded = isExcluded
-      ? filters.excludedCategories.filter(c => c !== category)
+      ? filters.excludedCategories.filter((c) => c !== category)
       : [...filters.excludedCategories, category];
     onFiltersChange({ ...filters, excludedCategories: newExcluded });
   };
 
   const clearFilters = () => {
-    onFiltersChange({
-      startDate: undefined,
-      endDate: undefined,
-      excludedCategories: [],
-    });
+    onFiltersChange({ startDate: undefined, endDate: undefined, excludedCategories: [] });
   };
 
   const hasActiveFilters = filters.startDate || filters.endDate || filters.excludedCategories.length > 0;
-
-  const activeFilterCount = 
-    (filters.startDate ? 1 : 0) + 
-    (filters.endDate ? 1 : 0) + 
-    filters.excludedCategories.length;
+  const activeFilterCount =
+    (filters.startDate ? 1 : 0) + (filters.endDate ? 1 : 0) + filters.excludedCategories.length;
 
   return (
     <Card>
@@ -92,7 +112,16 @@ export function TransactionFilters({ filters, onFiltersChange }: TransactionFilt
         </div>
       </CardHeader>
       <CardContent className="space-y-4">
-        {/* Date Range Filters */}
+        {/* Date Presets */}
+        <div className="flex flex-wrap gap-2">
+          {datePresets.map((preset) => (
+            <Button key={preset.label} variant="outline" size="sm" onClick={() => handlePreset(preset)}>
+              {preset.label}
+            </Button>
+          ))}
+        </div>
+
+        {/* Date Range Pickers */}
         <div className="grid gap-4 sm:grid-cols-2">
           <div className="space-y-2">
             <Label className="text-sm font-medium">Data Inicial</Label>
@@ -100,55 +129,40 @@ export function TransactionFilters({ filters, onFiltersChange }: TransactionFilt
               <PopoverTrigger asChild>
                 <Button
                   variant="outline"
-                  className={cn(
-                    "w-full justify-start text-left font-normal",
-                    !filters.startDate && "text-muted-foreground"
-                  )}
+                  className={cn("w-full justify-start text-left font-normal", !filters.startDate && "text-muted-foreground")}
                 >
                   <CalendarIcon className="mr-2 h-4 w-4" />
-                  {filters.startDate ? (
-                    format(filters.startDate, "dd/MM/yyyy", { locale: ptBR })
-                  ) : (
-                    <span>Selecionar data</span>
-                  )}
+                  {filters.startDate ? format(filters.startDate, "dd/MM/yyyy", { locale: ptBR }) : "Selecionar data"}
                 </Button>
               </PopoverTrigger>
               <PopoverContent className="w-auto p-0" align="start">
                 <Calendar
                   mode="single"
                   selected={filters.startDate}
-                  onSelect={handleStartDateChange}
+                  onSelect={(date) => onFiltersChange({ ...filters, startDate: date })}
                   initialFocus
                   className="p-3 pointer-events-auto"
                 />
               </PopoverContent>
             </Popover>
           </div>
-
           <div className="space-y-2">
             <Label className="text-sm font-medium">Data Final</Label>
             <Popover>
               <PopoverTrigger asChild>
                 <Button
                   variant="outline"
-                  className={cn(
-                    "w-full justify-start text-left font-normal",
-                    !filters.endDate && "text-muted-foreground"
-                  )}
+                  className={cn("w-full justify-start text-left font-normal", !filters.endDate && "text-muted-foreground")}
                 >
                   <CalendarIcon className="mr-2 h-4 w-4" />
-                  {filters.endDate ? (
-                    format(filters.endDate, "dd/MM/yyyy", { locale: ptBR })
-                  ) : (
-                    <span>Selecionar data</span>
-                  )}
+                  {filters.endDate ? format(filters.endDate, "dd/MM/yyyy", { locale: ptBR }) : "Selecionar data"}
                 </Button>
               </PopoverTrigger>
               <PopoverContent className="w-auto p-0" align="start">
                 <Calendar
                   mode="single"
                   selected={filters.endDate}
-                  onSelect={handleEndDateChange}
+                  onSelect={(date) => onFiltersChange({ ...filters, endDate: date })}
                   initialFocus
                   className="p-3 pointer-events-auto"
                 />
@@ -157,60 +171,56 @@ export function TransactionFilters({ filters, onFiltersChange }: TransactionFilt
           </div>
         </div>
 
-        {/* Category Exclusion */}
-        <div className="space-y-2">
-          <Label className="text-sm font-medium">Excluir do Cálculo</Label>
-          <p className="text-xs text-muted-foreground mb-2">
-            Marque as categorias que deseja remover dos totais e gráficos
-          </p>
-          <div className="flex flex-wrap gap-3">
-            {categoryOptions.map((category) => {
-              const isExcluded = filters.excludedCategories.includes(category.value);
-              return (
-                <div
-                  key={category.value}
-                  className={cn(
-                    "flex items-center gap-2 px-3 py-2 rounded-lg border transition-colors cursor-pointer",
-                    isExcluded 
-                      ? "border-destructive/50 bg-destructive/10" 
-                      : "border-border hover:bg-accent"
-                  )}
-                  onClick={() => handleCategoryToggle(category.value)}
-                >
-                  <Checkbox
-                    id={`exclude-${category.value}`}
-                    checked={isExcluded}
-                    onCheckedChange={() => handleCategoryToggle(category.value)}
-                  />
-                  <Label
-                    htmlFor={`exclude-${category.value}`}
+        {/* Dynamic Category Exclusion */}
+        {availableCategories.length > 0 && (
+          <div className="space-y-2">
+            <Label className="text-sm font-medium">Excluir do Cálculo</Label>
+            <p className="text-xs text-muted-foreground mb-2">
+              Marque as categorias que deseja remover dos totais e gráficos
+            </p>
+            <div className="flex flex-wrap gap-3">
+              {availableCategories.map((cat) => {
+                const isExcluded = filters.excludedCategories.includes(cat.value);
+                return (
+                  <div
+                    key={cat.value}
                     className={cn(
-                      "text-sm cursor-pointer",
-                      isExcluded && "line-through text-muted-foreground"
+                      "flex items-center gap-2 px-3 py-2 rounded-lg border transition-colors cursor-pointer",
+                      isExcluded ? "border-destructive/50 bg-destructive/10" : "border-border hover:bg-accent"
                     )}
+                    onClick={() => handleCategoryToggle(cat.value)}
                   >
-                    {category.label}
-                  </Label>
-                </div>
-              );
-            })}
+                    <Checkbox
+                      id={`exclude-${cat.value}`}
+                      checked={isExcluded}
+                      onCheckedChange={() => handleCategoryToggle(cat.value)}
+                    />
+                    <Label
+                      htmlFor={`exclude-${cat.value}`}
+                      className={cn("text-sm cursor-pointer", isExcluded && "line-through text-muted-foreground")}
+                    >
+                      {cat.label}
+                      <span className="ml-1 text-xs text-muted-foreground">
+                        ({cat.count} • {formatBRL(cat.total)})
+                      </span>
+                    </Label>
+                  </div>
+                );
+              })}
+            </div>
           </div>
-        </div>
+        )}
 
-        {/* Active Exclusions Summary */}
         {filters.excludedCategories.length > 0 && (
           <div className="pt-2 border-t">
             <p className="text-xs text-muted-foreground">
               Categorias excluídas:{" "}
-              {filters.excludedCategories.map((cat, index) => {
-                const option = categoryOptions.find(o => o.value === cat);
-                return (
-                  <span key={cat}>
-                    <span className="font-medium">{option?.label}</span>
-                    {index < filters.excludedCategories.length - 1 && ", "}
-                  </span>
-                );
-              })}
+              {filters.excludedCategories.map((cat, idx) => (
+                <span key={cat}>
+                  <span className="font-medium">{categoryLabels[cat] || cat}</span>
+                  {idx < filters.excludedCategories.length - 1 && ", "}
+                </span>
+              ))}
             </p>
           </div>
         )}
