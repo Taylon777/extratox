@@ -213,6 +213,51 @@ export type Database = {
           },
         ]
       }
+      transactions: {
+        Row: {
+          bank_name: string | null
+          category: Database["public"]["Enums"]["transaction_category"]
+          created_at: string
+          date: string
+          description: string
+          duplicate_of: string | null
+          id: string
+          is_duplicate: boolean | null
+          type: Database["public"]["Enums"]["transaction_type"]
+          updated_at: string
+          user_id: string
+          value: number
+        }
+        Insert: {
+          bank_name?: string | null
+          category: Database["public"]["Enums"]["transaction_category"]
+          created_at?: string
+          date: string
+          description: string
+          duplicate_of?: string | null
+          id?: string
+          is_duplicate?: boolean | null
+          type: Database["public"]["Enums"]["transaction_type"]
+          updated_at?: string
+          user_id: string
+          value: number
+        }
+        Update: {
+          bank_name?: string | null
+          category?: Database["public"]["Enums"]["transaction_category"]
+          created_at?: string
+          date?: string
+          description?: string
+          duplicate_of?: string | null
+          id?: string
+          is_duplicate?: boolean | null
+          type?: Database["public"]["Enums"]["transaction_type"]
+          updated_at?: string
+          user_id?: string
+          value?: number
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
@@ -222,6 +267,14 @@ export type Database = {
     }
     Enums: {
       bank_code: "itau" | "bradesco" | "bb" | "santander" | "nubank" | "generic"
+      transaction_category:
+        | "pix"
+        | "transferencia"
+        | "cartao_debito"
+        | "cartao_credito"
+        | "taxas"
+        | "outros"
+      transaction_type: "entrada" | "saida"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -350,6 +403,15 @@ export const Constants = {
   public: {
     Enums: {
       bank_code: ["itau", "bradesco", "bb", "santander", "nubank", "generic"],
+      transaction_category: [
+        "pix",
+        "transferencia",
+        "cartao_debito",
+        "cartao_credito",
+        "taxas",
+        "outros",
+      ],
+      transaction_type: ["entrada", "saida"],
     },
   },
 } as const

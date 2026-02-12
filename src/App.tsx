@@ -1,4 +1,3 @@
-import { useState } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -13,8 +12,6 @@ import ImportFinanceira from "./pages/ImportFinanceira";
 import Templates from "./pages/Templates";
 import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
-import { Transaction } from "./components/dashboard/TransactionTable";
-import { mockTransactions } from "./data/mockTransactions";
 
 const queryClient = new QueryClient();
 
@@ -28,12 +25,6 @@ const AppLayout = ({ children }: { children: React.ReactNode }) => (
 );
 
 const App = () => {
-  const [transactions, setTransactions] = useState<Transaction[]>(mockTransactions);
-
-  const handleImportComplete = (newTransactions: Transaction[]) => {
-    setTransactions((prev) => [...newTransactions, ...prev]);
-  };
-
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
@@ -48,10 +39,7 @@ const App = () => {
                 element={
                   <ProtectedRoute>
                     <AppLayout>
-                      <Index
-                        transactions={transactions}
-                        setTransactions={setTransactions}
-                      />
+                      <Index />
                     </AppLayout>
                   </ProtectedRoute>
                 }
@@ -61,10 +49,7 @@ const App = () => {
                 element={
                   <ProtectedRoute>
                     <AppLayout>
-                      <ImportFinanceira
-                        existingTransactions={transactions}
-                        onImportComplete={handleImportComplete}
-                      />
+                      <ImportFinanceira />
                     </AppLayout>
                   </ProtectedRoute>
                 }
