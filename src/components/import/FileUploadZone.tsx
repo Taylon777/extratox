@@ -2,7 +2,7 @@ import { useState, useCallback } from "react";
 import { Upload, FileSpreadsheet, FileText, File, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+
 import { Textarea } from "@/components/ui/textarea";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Progress } from "@/components/ui/progress";
@@ -111,142 +111,119 @@ export function FileUploadZone({
 
   return (
     <div className="space-y-6">
-      <Tabs defaultValue="file">
-        <TabsList className="grid w-full grid-cols-2">
-          <TabsTrigger value="file">Upload de Arquivo</TabsTrigger>
-          <TabsTrigger value="text">Colar Texto (PDF)</TabsTrigger>
-        </TabsList>
+      {/* Drop zone */}
+      <div
+        className={cn(
+          "border-2 border-dashed rounded-lg p-8 text-center transition-colors",
+          isDragOver
+            ? "border-primary bg-primary/5"
+            : "border-muted-foreground/25 hover:border-primary/50",
+          isProcessing && "pointer-events-none opacity-50"
+        )}
+        onDragOver={(e) => {
+          e.preventDefault();
+          setIsDragOver(true);
+        }}
+        onDragLeave={() => setIsDragOver(false)}
+        onDrop={handleDrop}
+      >
+        <input
+          type="file"
+          id="file-upload"
+          className="hidden"
+          accept=".csv,.ofx,.qfx,.xlsx,.xls,.pdf"
+          onChange={handleFileSelect}
+          disabled={isProcessing}
+        />
 
-        <TabsContent value="file" className="mt-4">
-          <div
-            className={cn(
-              "border-2 border-dashed rounded-lg p-8 text-center transition-colors",
-              isDragOver
-                ? "border-primary bg-primary/5"
-                : "border-muted-foreground/25 hover:border-primary/50",
-              isProcessing && "pointer-events-none opacity-50"
-            )}
-            onDragOver={(e) => {
-              e.preventDefault();
-              setIsDragOver(true);
-            }}
-            onDragLeave={() => setIsDragOver(false)}
-            onDrop={handleDrop}
-          >
-            <input
-              type="file"
-              id="file-upload"
-              className="hidden"
-              accept=".csv,.ofx,.qfx,.xlsx,.xls,.pdf"
-              onChange={handleFileSelect}
-              disabled={isProcessing}
-            />
-
-            <label htmlFor="file-upload" className="cursor-pointer">
-              <div className="flex flex-col items-center gap-4">
-                <div className="p-4 rounded-full bg-primary/10">
-                  <Upload className="h-8 w-8 text-primary" />
-                </div>
-                <div>
-                  <p className="text-lg font-medium">
-                    Arraste seu arquivo aqui ou clique para selecionar
-                  </p>
-                  <p className="text-sm text-muted-foreground mt-1">
-                    Formatos suportados: CSV, OFX, Excel (.xlsx, .xls), PDF
-                  </p>
-                </div>
-
-                <div className="flex gap-4 mt-2">
-                  {Object.entries(fileTypeInfo)
-                    .filter(([key]) => key !== "unknown")
-                    .map(([key, info]) => {
-                      const Icon = info.icon;
-                      return (
-                        <div
-                          key={key}
-                          className="flex items-center gap-1 text-xs text-muted-foreground"
-                        >
-                          <Icon className={cn("h-4 w-4", info.color)} />
-                          {info.label}
-                        </div>
-                      );
-                    })}
-                </div>
-              </div>
-            </label>
-          </div>
-
-          {isProcessing && (
-            <div className="mt-4 space-y-2">
-              <div className="flex justify-between text-sm">
-                <span>Processando arquivo...</span>
-                <span>{progress}%</span>
-              </div>
-              <Progress value={progress} />
+        <label htmlFor="file-upload" className="cursor-pointer">
+          <div className="flex flex-col items-center gap-4">
+            <div className="p-4 rounded-full bg-primary/10">
+              <Upload className="h-8 w-8 text-primary" />
             </div>
-          )}
-        </TabsContent>
+            <div>
+              <p className="text-lg font-medium">
+                Arraste seu arquivo aqui ou clique para selecionar
+              </p>
+              <p className="text-sm text-muted-foreground mt-1">
+                Formatos suportados: CSV, OFX, Excel (.xlsx, .xls), PDF
+              </p>
+            </div>
 
-        <TabsContent value="text" className="mt-4 space-y-4">
-          {selectedFile ? (
-            <Alert>
-              <AlertCircle className="h-4 w-4" />
-              <AlertDescription>
-                Arquivo PDF selecionado: <strong>{selectedFile.name}</strong>. Cole o conteúdo
-                extraído do PDF abaixo.
-              </AlertDescription>
-            </Alert>
-          ) : (
-            <Alert>
-              <AlertCircle className="h-4 w-4" />
-              <AlertDescription>
-                Para PDFs, primeiro selecione o arquivo na aba "Upload de Arquivo", depois cole
-                o texto extraído aqui. Ou simplesmente cole o texto diretamente.
-              </AlertDescription>
-            </Alert>
-          )}
+            <div className="flex gap-4 mt-2">
+              {Object.entries(fileTypeInfo)
+                .filter(([key]) => key !== "unknown")
+                .map(([key, info]) => {
+                  const Icon = info.icon;
+                  return (
+                    <div
+                      key={key}
+                      className="flex items-center gap-1 text-xs text-muted-foreground"
+                    >
+                      <Icon className={cn("h-4 w-4", info.color)} />
+                      {info.label}
+                    </div>
+                  );
+                })}
+            </div>
+          </div>
+        </label>
+      </div>
 
-          <Textarea
-            placeholder="Cole aqui o conteúdo extraído do PDF do extrato bancário...
+      {isProcessing && (
+        <div className="space-y-2">
+          <div className="flex justify-between text-sm">
+            <span>Processando arquivo...</span>
+            <span>{progress}%</span>
+          </div>
+          <Progress value={progress} />
+        </div>
+      )}
+
+      {/* PDF text input - shown when a PDF is selected */}
+      {selectedFile && !isProcessing && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-sm flex items-center gap-2">
+              <FileText className="h-4 w-4 text-red-500" />
+              PDF selecionado: {selectedFile.name}
+            </CardTitle>
+            <CardDescription>
+              PDFs precisam de extração de texto. Cole abaixo o conteúdo copiado do seu extrato PDF.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <Textarea
+              placeholder="Cole aqui o conteúdo extraído do PDF do extrato bancário...
 
 Exemplo de formato esperado:
 15/01/2024 PIX Recebido - João Silva 1.500,00
 15/01/2024 TED Enviada - Fornecedor ABC -2.300,00
 16/01/2024 Tarifa Manutenção -35,00"
-            value={pdfText}
-            onChange={(e) => setPdfText(e.target.value)}
-            className="min-h-[300px] font-mono text-sm"
-          />
-
-          <div className="flex justify-end gap-3">
-            <Button
-              variant="outline"
-              onClick={() => {
-                setPdfText("");
-                setSelectedFile(null);
-              }}
-              disabled={!pdfText && !selectedFile}
-            >
-              Limpar
-            </Button>
-            <Button
-              onClick={() => {
-                if (pdfText.trim()) {
-                  // Cria um arquivo virtual para processamento
-                  const blob = new Blob([pdfText], { type: "application/pdf" });
-                  const virtualFile = selectedFile || new window.File([blob], "extrato.pdf", {
-                    type: "application/pdf",
-                  });
-                  processFile(virtualFile, pdfText);
-                }
-              }}
-              disabled={!pdfText.trim() || isProcessing}
-            >
-              Processar Texto
-            </Button>
-          </div>
-        </TabsContent>
-      </Tabs>
+              value={pdfText}
+              onChange={(e) => setPdfText(e.target.value)}
+              className="min-h-[250px] font-mono text-sm"
+            />
+            <div className="flex justify-end gap-3">
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setPdfText("");
+                  setSelectedFile(null);
+                }}
+              >
+                Cancelar
+              </Button>
+              <Button
+                onClick={handleProcessPdfText}
+                disabled={!pdfText.trim()}
+              >
+                Processar Texto
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {error && (
         <Alert variant="destructive">
@@ -273,7 +250,8 @@ Exemplo de formato esperado:
             <strong>Excel:</strong> Arquivos .xlsx ou .xls com transações em formato tabular.
           </p>
           <p>
-            <strong>PDF:</strong> Copie o texto do extrato e cole na aba "Colar Texto".
+            <strong>PDF:</strong> Selecione o PDF e cole o texto extraído do extrato. Para análise
+            automática com IA, use a aba "Análise IA (PDF)".
           </p>
         </CardContent>
       </Card>
