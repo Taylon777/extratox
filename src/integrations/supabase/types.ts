@@ -86,6 +86,42 @@ export type Database = {
         }
         Relationships: []
       }
+      imports: {
+        Row: {
+          created_at: string
+          duplicates_skipped: number
+          file_name: string
+          file_type: string
+          id: string
+          imported_transactions: number
+          status: string
+          total_transactions: number
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          duplicates_skipped?: number
+          file_name: string
+          file_type: string
+          id?: string
+          imported_transactions?: number
+          status?: string
+          total_transactions?: number
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          duplicates_skipped?: number
+          file_name?: string
+          file_type?: string
+          id?: string
+          imported_transactions?: number
+          status?: string
+          total_transactions?: number
+          user_id?: string
+        }
+        Relationships: []
+      }
       report_templates: {
         Row: {
           bank_code: Database["public"]["Enums"]["bank_code"]
@@ -222,7 +258,9 @@ export type Database = {
           description: string
           duplicate_of: string | null
           id: string
+          import_id: string | null
           is_duplicate: boolean | null
+          transaction_hash: string | null
           type: Database["public"]["Enums"]["transaction_type"]
           updated_at: string
           user_id: string
@@ -236,7 +274,9 @@ export type Database = {
           description: string
           duplicate_of?: string | null
           id?: string
+          import_id?: string | null
           is_duplicate?: boolean | null
+          transaction_hash?: string | null
           type: Database["public"]["Enums"]["transaction_type"]
           updated_at?: string
           user_id: string
@@ -250,7 +290,9 @@ export type Database = {
           description?: string
           duplicate_of?: string | null
           id?: string
+          import_id?: string | null
           is_duplicate?: boolean | null
+          transaction_hash?: string | null
           type?: Database["public"]["Enums"]["transaction_type"]
           updated_at?: string
           user_id?: string
