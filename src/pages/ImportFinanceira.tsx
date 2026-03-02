@@ -23,19 +23,27 @@ import { detectBank } from "@/lib/bankDetection";
 import { findMatchingTemplate } from "@/lib/templateService";
 import { saveImportLog, createImportLog } from "@/lib/importLogs";
 import { useTransactions } from "@/hooks/useTransactions";
+import { useAuth } from "@/hooks/useAuth";
+import {
+  createImportSession,
+  fetchExistingHashes,
+  saveTransactionsWithDedup,
+} from "@/services/importService";
 import { toast } from "sonner";
 
 type ImportStep = "upload" | "preview" | "success";
 
 export default function ImportFinanceira() {
   const navigate = useNavigate();
-  const { transactions: existingTransactions, addTransactions } = useTransactions();
+  const { user } = useAuth();
+  const { transactions: existingTransactions, addTransactions, refetch } = useTransactions();
   const [step, setStep] = useState<ImportStep>("upload");
   const [isProcessing, setIsProcessing] = useState(false);
   const [transactions, setTransactions] = useState<ExtendedTransaction[]>([]);
   const [importInfo, setImportInfo] = useState({ fileName: "", fileType: "" });
   const [showHistory, setShowHistory] = useState(false);
   const [importedCount, setImportedCount] = useState(0);
+  const [duplicatesSkipped, setDuplicatesSkipped] = useState(0);
   const [detectedBank, setDetectedBank] = useState<BankCode>("generic");
   const [matchedTemplate, setMatchedTemplate] = useState<TemplateWithRelations | null>(null);
 
@@ -67,10 +75,21 @@ export default function ImportFinanceira() {
   };
 
   const handleConfirmImport = async () => {
+    if (!user) {
+      toast.error("Usuário não autenticado.");
+      return;
+    }
+
     const selectedTransactions = transactions.filter((t) => t.isSelected !== false);
 
     try {
-      await addTransactions(
+      // Create import session and use hash-based dedup
+      const importId = await createImportSession(user.id, importInfo.fileName, importInfo.fileType);
+      const existingHashes = await fetchExistingHashes(user.id);
+
+      const result = await saveTransactionsWithDedup(
+        user.id,
+        importId,
         selectedTransactions.map((t) => ({
           date: t.date,
           description: t.description,
@@ -79,7 +98,8 @@ export default function ImportFinanceira() {
           value: t.value,
           bank_name: detectedBank !== "generic" ? detectedBank : undefined,
           is_duplicate: t.isDuplicate,
-        }))
+        })),
+        existingHashes
       );
 
       const editedCount = transactions.filter((t) => t.isEdited).length;
@@ -90,35 +110,62 @@ export default function ImportFinanceira() {
         importInfo.fileName,
         importInfo.fileType,
         transactions.length,
-        selectedTransactions.length,
+        result.imported,
         removedCount,
         editedCount,
-        duplicatesCount
+        duplicatesCount + result.skipped
       );
       saveImportLog(log);
 
-      setImportedCount(selectedTransactions.length);
+      setImportedCount(result.imported);
+      setDuplicatesSkipped(result.skipped);
       setStep("success");
-      toast.success(`${selectedTransactions.length} transações importadas com sucesso!`);
+      await refetch();
+
+      if (result.skipped > 0) {
+        toast.success(`${result.imported} transações importadas. ${result.skipped} duplicatas ignoradas.`);
+      } else {
+        toast.success(`${result.imported} transações importadas com sucesso!`);
+      }
     } catch {
       toast.error("Erro ao salvar transações. Tente novamente.");
     }
   };
 
   const handleAiImportComplete = async (txns: { id: string; date: string; description: string; category: any; type: any; value: number }[]) => {
+    if (!user) {
+      toast.error("Usuário não autenticado.");
+      return;
+    }
+
     try {
-      await addTransactions(
+      const importId = await createImportSession(user.id, "Análise IA", "pdf");
+      const existingHashes = await fetchExistingHashes(user.id);
+
+      const result = await saveTransactionsWithDedup(
+        user.id,
+        importId,
         txns.map((t) => ({
           date: t.date,
           description: t.description,
           category: t.category,
           type: t.type,
           value: t.value,
-        }))
+        })),
+        existingHashes
       );
-      setImportedCount(txns.length);
+
+      setImportedCount(result.imported);
+      setDuplicatesSkipped(result.skipped);
       setImportInfo({ fileName: "Análise IA", fileType: "pdf" });
       setStep("success");
+      await refetch();
+
+      if (result.skipped > 0) {
+        toast.success(`${result.imported} importadas. ${result.skipped} duplicatas ignoradas.`);
+      } else {
+        toast.success(`${result.imported} transações importadas!`);
+      }
     } catch {
       toast.error("Erro ao salvar transações da análise IA.");
     }
@@ -134,6 +181,7 @@ export default function ImportFinanceira() {
     setImportInfo({ fileName: "", fileType: "" });
     setDetectedBank("generic");
     setMatchedTemplate(null);
+    setDuplicatesSkipped(0);
     setStep("upload");
   };
 
@@ -252,6 +300,11 @@ export default function ImportFinanceira() {
                   <h2 className="text-2xl font-bold mb-2">Importação Concluída!</h2>
                   <p className="text-muted-foreground">
                     {importedCount} transações foram salvas com sucesso.
+                    {duplicatesSkipped > 0 && (
+                      <span className="block mt-1 text-warning">
+                        {duplicatesSkipped} duplicatas foram ignoradas automaticamente.
+                      </span>
+                    )}
                   </p>
                 </div>
                 <div className="flex gap-3">

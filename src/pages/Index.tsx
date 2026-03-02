@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   TrendingUp,
@@ -11,11 +11,12 @@ import {
   FileBarChart,
 } from "lucide-react";
 import { useTransactions } from "@/hooks/useTransactions";
+import { useDashboardMetrics, FilterState } from "@/hooks/useDashboardMetrics";
 import { DashboardStatCard } from "@/components/dashboard/DashboardStatCard";
 import { TransactionTable } from "@/components/dashboard/TransactionTable";
 import { FinancialChart } from "@/components/dashboard/FinancialChart";
 import { CategoryPieChart } from "@/components/dashboard/CategoryPieChart";
-import { TransactionFilters, FilterState } from "@/components/dashboard/TransactionFilters";
+import { TransactionFilters } from "@/components/dashboard/TransactionFilters";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -23,43 +24,20 @@ import { SidebarTrigger } from "@/components/ui/sidebar";
 
 const Index = () => {
   const navigate = useNavigate();
-  const { transactions, isLoading, monthlyData } = useTransactions();
+  const { transactions, isLoading } = useTransactions();
   const [filters, setFilters] = useState<FilterState>({
     startDate: undefined,
     endDate: undefined,
     excludedCategories: [],
   });
 
-  const filteredTransactions = useMemo(() => {
-    return transactions.filter((t) => {
-      const transactionDate = new Date(t.date);
-      if (filters.startDate && transactionDate < filters.startDate) return false;
-      if (filters.endDate) {
-        const endOfDay = new Date(filters.endDate);
-        endOfDay.setHours(23, 59, 59, 999);
-        if (transactionDate > endOfDay) return false;
-      }
-      if (filters.excludedCategories.includes(t.category)) return false;
-      return true;
-    });
-  }, [transactions, filters]);
-
-  const totalEntradas = filteredTransactions
-    .filter((t) => t.type === "entrada")
-    .reduce((acc, t) => acc + Number(t.value), 0);
-
-  const totalSaidas = filteredTransactions
-    .filter((t) => t.type === "saida")
-    .reduce((acc, t) => acc + Number(t.value), 0);
-
-  const saldoLiquido = totalEntradas - totalSaidas;
-  const duplicatesCount = filteredTransactions.filter((t) => t.is_duplicate).length;
-
-  const categoryDataEntradas = calculateCategoryData(filteredTransactions, "entrada");
-  const categoryDataSaidas = calculateCategoryData(filteredTransactions, "saida");
-
-  const formatCurrency = (value: number) =>
-    new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(value);
+  const {
+    filteredTransactions,
+    metrics,
+    categoryDataEntradas,
+    categoryDataSaidas,
+    formatCurrency,
+  } = useDashboardMetrics(transactions, filters);
 
   const hasData = transactions.length > 0;
   const hasFilteredData = filteredTransactions.length > 0;
@@ -67,42 +45,42 @@ const Index = () => {
   const statCards = [
     {
       title: "Total de Entradas",
-      value: formatCurrency(totalEntradas),
+      value: formatCurrency(metrics.totalEntradas),
       icon: TrendingUp,
       iconColor: "text-success",
       iconBg: "bg-success/10",
     },
     {
       title: "Total de Saídas",
-      value: formatCurrency(totalSaidas),
+      value: formatCurrency(metrics.totalSaidas),
       icon: TrendingDown,
       iconColor: "text-destructive",
       iconBg: "bg-destructive/10",
     },
     {
       title: "Saldo Líquido",
-      value: formatCurrency(saldoLiquido),
+      value: formatCurrency(metrics.saldoLiquido),
       icon: Wallet,
-      iconColor: saldoLiquido >= 0 ? "text-success" : "text-destructive",
-      iconBg: saldoLiquido >= 0 ? "bg-success/10" : "bg-destructive/10",
+      iconColor: metrics.saldoLiquido >= 0 ? "text-success" : "text-destructive",
+      iconBg: metrics.saldoLiquido >= 0 ? "bg-success/10" : "bg-destructive/10",
     },
     {
       title: "ICMS a Recolher",
-      value: formatCurrency(totalSaidas * 0),
+      value: formatCurrency(0),
       icon: Receipt,
       iconColor: "text-warning",
       iconBg: "bg-warning/10",
     },
     {
       title: "Transações Importadas",
-      value: transactions.length,
+      value: metrics.transactionCount,
       icon: FileText,
       iconColor: "text-primary",
       iconBg: "bg-primary/10",
     },
     {
       title: "Duplicatas Detectadas",
-      value: duplicatesCount,
+      value: metrics.duplicatesCount,
       icon: AlertTriangle,
       iconColor: "text-warning",
       iconBg: "bg-warning/10",
@@ -157,7 +135,6 @@ const Index = () => {
 
       <main className="p-6 space-y-6">
         {!hasData ? (
-          /* Empty State */
           <Card className="max-w-2xl mx-auto">
             <CardContent className="pt-12 pb-12 text-center">
               <div className="flex flex-col items-center gap-6">
@@ -180,14 +157,12 @@ const Index = () => {
           </Card>
         ) : (
           <>
-            {/* Stat Cards */}
             <section className="grid gap-4 grid-cols-2 md:grid-cols-3 lg:grid-cols-6">
               {statCards.map((card) => (
                 <DashboardStatCard key={card.title} {...card} />
               ))}
             </section>
 
-            {/* Filters */}
             <section>
               <TransactionFilters
                 filters={filters}
@@ -209,10 +184,9 @@ const Index = () => {
               </Card>
             ) : (
               <>
-                {/* Charts */}
                 <section className="grid gap-6 lg:grid-cols-3">
                   <div className="lg:col-span-2">
-                    <FinancialChart data={monthlyData} />
+                    <FinancialChart data={metrics.monthlyData} />
                   </div>
                   {categoryDataEntradas.length > 0 && (
                     <div>
@@ -221,7 +195,6 @@ const Index = () => {
                   )}
                 </section>
 
-                {/* Table + Pie */}
                 <section className="grid gap-6 lg:grid-cols-3">
                   <div className="lg:col-span-2">
                     <Card>
@@ -254,42 +227,5 @@ const Index = () => {
     </div>
   );
 };
-
-function calculateCategoryData(
-  transactions: { category: string; type: string; value: number }[],
-  type: "entrada" | "saida"
-) {
-  const categoryColors: Record<string, string> = {
-    pix: "#8b5cf6",
-    transferencia: "#3b82f6",
-    cartao_debito: "#10b981",
-    cartao_credito: "#f59e0b",
-    taxas: "#64748b",
-    outros: "#6b7280",
-  };
-
-  const categoryLabels: Record<string, string> = {
-    pix: "Pix",
-    transferencia: "Transferência",
-    cartao_debito: "Vendas – Disponível Débito",
-    cartao_credito: "Vendas – Disponível Crédito",
-    taxas: "Taxas",
-    outros: "Outros",
-  };
-
-  const filtered = transactions.filter((t) => t.type === type);
-  const grouped: Record<string, number> = {};
-  for (const t of filtered) {
-    grouped[t.category] = (grouped[t.category] || 0) + Number(t.value);
-  }
-
-  return Object.entries(grouped)
-    .filter(([_, value]) => value > 0)
-    .map(([category, value]) => ({
-      name: categoryLabels[category] || category,
-      value,
-      color: categoryColors[category] || "#6b7280",
-    }));
-}
 
 export default Index;
