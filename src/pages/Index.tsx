@@ -4,7 +4,6 @@ import {
   TrendingUp,
   TrendingDown,
   Wallet,
-  Receipt,
   FileText,
   AlertTriangle,
   Upload,
@@ -65,13 +64,6 @@ const Index = () => {
       iconBg: metrics.saldoLiquido >= 0 ? "bg-success/10" : "bg-destructive/10",
     },
     {
-      title: "ICMS a Recolher",
-      value: formatCurrency(0),
-      icon: Receipt,
-      iconColor: "text-warning",
-      iconBg: "bg-warning/10",
-    },
-    {
       title: "Transações Importadas",
       value: metrics.transactionCount,
       icon: FileText,
@@ -100,8 +92,8 @@ const Index = () => {
           </div>
         </header>
         <main className="p-6 space-y-6">
-          <section className="grid gap-4 grid-cols-2 md:grid-cols-3 lg:grid-cols-6">
-            {Array.from({ length: 6 }).map((_, i) => (
+          <section className="grid gap-4 grid-cols-2 md:grid-cols-3 lg:grid-cols-5">
+            {Array.from({ length: 5 }).map((_, i) => (
               <Skeleton key={i} className="h-28 rounded-xl" />
             ))}
           </section>
@@ -157,7 +149,7 @@ const Index = () => {
           </Card>
         ) : (
           <>
-            <section className="grid gap-4 grid-cols-2 md:grid-cols-3 lg:grid-cols-6">
+            <section className="grid gap-4 grid-cols-2 md:grid-cols-3 lg:grid-cols-5">
               {statCards.map((card) => (
                 <DashboardStatCard key={card.title} {...card} />
               ))}
