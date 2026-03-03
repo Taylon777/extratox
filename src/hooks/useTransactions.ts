@@ -31,7 +31,8 @@ export function useTransactions() {
     try {
       const { data, error } = await supabase
         .from("transactions")
-        .select("id, date, description, category, type, value, bank_name, is_duplicate, created_at")
+        .select("id, date, description, category, type, value, bank_name, is_duplicate, created_at, import_id")
+        .not("import_id", "is", null)
         .order("date", { ascending: false });
 
       if (error) throw error;
