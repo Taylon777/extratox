@@ -10,6 +10,7 @@ import { AppSidebar } from "@/components/AppSidebar";
 import Index from "./pages/Index";
 import ImportFinanceira from "./pages/ImportFinanceira";
 import Templates from "./pages/Templates";
+import Relatorio from "./pages/Relatorio";
 import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
 
@@ -60,6 +61,16 @@ const App = () => {
                   <ProtectedRoute>
                     <AppLayout>
                       <Templates />
+                    </AppLayout>
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/relatorio"
+                element={
+                  <ProtectedRoute>
+                    <AppLayout>
+                      <Relatorio />
                     </AppLayout>
                   </ProtectedRoute>
                 }
