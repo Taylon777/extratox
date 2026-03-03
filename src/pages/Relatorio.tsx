@@ -1,10 +1,20 @@
-import { useState } from "react";
-import { FileDown, Loader2 } from "lucide-react";
+import { useState, useMemo } from "react";
+import { FileDown, Loader2, Building2, Eye } from "lucide-react";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+} from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Separator } from "@/components/ui/separator";
 import { useTransactions } from "@/hooks/useTransactions";
 import { useDashboardMetrics, FilterState } from "@/hooks/useDashboardMetrics";
+import { generateProfessionalReport } from "@/lib/reportGenerator";
 import { toast } from "sonner";
 
 const Relatorio = () => {
@@ -14,10 +24,26 @@ const Relatorio = () => {
     endDate: undefined,
     excludedCategories: [],
   });
-  const { filteredTransactions, metrics, formatCurrency } = useDashboardMetrics(transactions, filters);
+  const { filteredTransactions, metrics, formatCurrency } = useDashboardMetrics(
+    transactions,
+    filters
+  );
   const [generating, setGenerating] = useState(false);
+  const [companyName, setCompanyName] = useState("R&R Contas");
+  const [companyId, setCompanyId] = useState("");
 
-  const handleGeneratePdf = async () => {
+  const period = useMemo(() => {
+    if (filteredTransactions.length === 0) return { start: "—", end: "—" };
+    const dates = filteredTransactions.map((t) => new Date(t.date).getTime());
+    const min = new Date(Math.min(...dates));
+    const max = new Date(Math.max(...dates));
+    return {
+      start: min.toLocaleDateString("pt-BR"),
+      end: max.toLocaleDateString("pt-BR"),
+    };
+  }, [filteredTransactions]);
+
+  const handleGeneratePdf = () => {
     if (filteredTransactions.length === 0) {
       toast.error("Nenhuma transação disponível para gerar relatório.");
       return;
@@ -25,47 +51,20 @@ const Relatorio = () => {
 
     setGenerating(true);
     try {
+      const html = generateProfessionalReport(filteredTransactions, metrics, {
+        companyName: companyName || "R&R Contas",
+        companyId: companyId || "—",
+        periodStart: period.start,
+        periodEnd: period.end,
+      });
+
       const printWindow = window.open("", "_blank");
       if (!printWindow) {
         toast.error("Permita pop-ups para gerar o relatório.");
         return;
       }
 
-      const rows = filteredTransactions
-        .map(
-          (t) =>
-            `<tr>
-              <td style="padding:6px 10px;border-bottom:1px solid #e5e7eb">${new Date(t.date).toLocaleDateString("pt-BR")}</td>
-              <td style="padding:6px 10px;border-bottom:1px solid #e5e7eb">${t.description}</td>
-              <td style="padding:6px 10px;border-bottom:1px solid #e5e7eb">${t.category}</td>
-              <td style="padding:6px 10px;border-bottom:1px solid #e5e7eb;color:${t.type === "entrada" ? "#16a34a" : "#dc2626"}">${t.type === "entrada" ? "+" : "-"} ${formatCurrency(t.value)}</td>
-            </tr>`
-        )
-        .join("");
-
-      printWindow.document.write(`<!DOCTYPE html>
-<html><head><title>Relatório Financeiro</title>
-<style>
-  body{font-family:system-ui,sans-serif;padding:40px;color:#1a1a1a}
-  h1{font-size:20px;margin-bottom:4px}
-  .subtitle{color:#666;font-size:13px;margin-bottom:24px}
-  .summary{display:flex;gap:24px;margin-bottom:24px}
-  .summary-card{background:#f9fafb;border:1px solid #e5e7eb;border-radius:8px;padding:12px 16px;flex:1}
-  .summary-card .label{font-size:11px;color:#666;text-transform:uppercase}
-  .summary-card .value{font-size:18px;font-weight:700;margin-top:2px}
-  .green{color:#16a34a} .red{color:#dc2626}
-  table{width:100%;border-collapse:collapse;font-size:13px}
-  th{text-align:left;padding:8px 10px;background:#f3f4f6;border-bottom:2px solid #d1d5db;font-size:11px;text-transform:uppercase;color:#666}
-</style></head><body>
-<h1>Relatório Financeiro</h1>
-<p class="subtitle">Gerado em ${new Date().toLocaleDateString("pt-BR")} — ${filteredTransactions.length} transações</p>
-<div class="summary">
-  <div class="summary-card"><div class="label">Entradas</div><div class="value green">${formatCurrency(metrics.totalEntradas)}</div></div>
-  <div class="summary-card"><div class="label">Saídas</div><div class="value red">${formatCurrency(metrics.totalSaidas)}</div></div>
-  <div class="summary-card"><div class="label">Saldo Líquido</div><div class="value" style="color:${metrics.saldoLiquido >= 0 ? "#16a34a" : "#dc2626"}">${formatCurrency(metrics.saldoLiquido)}</div></div>
-</div>
-<table><thead><tr><th>Data</th><th>Descrição</th><th>Categoria</th><th>Valor</th></tr></thead><tbody>${rows}</tbody></table>
-</body></html>`);
+      printWindow.document.write(html);
       printWindow.document.close();
       printWindow.print();
       toast.success("Relatório gerado com sucesso!");
@@ -76,66 +75,164 @@ const Relatorio = () => {
     }
   };
 
+  const handlePreview = () => {
+    if (filteredTransactions.length === 0) return;
+
+    const html = generateProfessionalReport(filteredTransactions, metrics, {
+      companyName: companyName || "R&R Contas",
+      companyId: companyId || "—",
+      periodStart: period.start,
+      periodEnd: period.end,
+    });
+
+    const previewWindow = window.open("", "_blank");
+    if (!previewWindow) {
+      toast.error("Permita pop-ups para visualizar.");
+      return;
+    }
+    previewWindow.document.write(html);
+    previewWindow.document.close();
+  };
+
+  const hasData = filteredTransactions.length > 0;
+
   return (
     <div className="flex-1 min-h-screen bg-background">
       <header className="border-b bg-card sticky top-0 z-30">
         <div className="px-6 py-4 flex items-center gap-4">
           <SidebarTrigger className="-ml-1" />
           <div>
-            <h1 className="text-xl font-bold tracking-tight text-foreground">Gerar Relatório</h1>
-            <p className="text-xs text-muted-foreground">Exporte suas transações em PDF</p>
+            <h1 className="text-xl font-bold tracking-tight text-foreground">
+              Gerar Relatório
+            </h1>
+            <p className="text-xs text-muted-foreground">
+              Exporte um relatório financeiro profissional em PDF
+            </p>
           </div>
         </div>
       </header>
 
-      <main className="p-6">
-        <Card className="max-w-2xl mx-auto">
+      <main className="p-6 max-w-3xl mx-auto space-y-6">
+        {/* Company Config */}
+        <Card>
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <FileDown className="h-5 w-5" />
-              Relatório PDF
+            <CardTitle className="flex items-center gap-2 text-base">
+              <Building2 className="h-4 w-4" />
+              Dados da Empresa
             </CardTitle>
             <CardDescription>
-              Gera um relatório com todas as transações importadas, incluindo resumo de entradas, saídas e saldo líquido.
+              Informações que aparecerão no cabeçalho do relatório.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="company-name">Nome da Empresa</Label>
+                <Input
+                  id="company-name"
+                  placeholder="R&R Contas"
+                  value={companyName}
+                  onChange={(e) => setCompanyName(e.target.value)}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="company-id">CNPJ / Identificação</Label>
+                <Input
+                  id="company-id"
+                  placeholder="00.000.000/0001-00"
+                  value={companyId}
+                  onChange={(e) => setCompanyId(e.target.value)}
+                />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Summary & Actions */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-base">
+              <FileDown className="h-4 w-4" />
+              Relatório Financeiro
+            </CardTitle>
+            <CardDescription>
+              Relatório corporativo com resumo executivo, gráficos de
+              categorias, e listagem completa de transações com saldo
+              acumulado.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             {isLoading ? (
-              <p className="text-sm text-muted-foreground">Carregando transações...</p>
-            ) : filteredTransactions.length === 0 ? (
               <p className="text-sm text-muted-foreground">
-                Nenhuma transação importada. Importe um extrato primeiro para gerar o relatório.
+                Carregando transações...
               </p>
+            ) : !hasData ? (
+              <div className="text-center py-6">
+                <p className="text-sm text-muted-foreground">
+                  Nenhuma transação importada. Importe um extrato primeiro.
+                </p>
+              </div>
             ) : (
-              <div className="space-y-3">
-                <div className="grid grid-cols-3 gap-3 text-sm">
+              <>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                   <div className="rounded-lg border p-3">
-                    <p className="text-muted-foreground text-xs">Transações</p>
-                    <p className="font-bold text-lg">{filteredTransactions.length}</p>
+                    <p className="text-muted-foreground text-xs">Período</p>
+                    <p className="font-semibold text-sm mt-1">
+                      {period.start} — {period.end}
+                    </p>
+                  </div>
+                  <div className="rounded-lg border p-3">
+                    <p className="text-muted-foreground text-xs">Lançamentos</p>
+                    <p className="font-bold text-lg">{metrics.transactionCount}</p>
                   </div>
                   <div className="rounded-lg border p-3">
                     <p className="text-muted-foreground text-xs">Entradas</p>
-                    <p className="font-bold text-lg text-success">{formatCurrency(metrics.totalEntradas)}</p>
+                    <p className="font-bold text-lg text-success">
+                      {formatCurrency(metrics.totalEntradas)}
+                    </p>
                   </div>
                   <div className="rounded-lg border p-3">
                     <p className="text-muted-foreground text-xs">Saídas</p>
-                    <p className="font-bold text-lg text-destructive">{formatCurrency(metrics.totalSaidas)}</p>
+                    <p className="font-bold text-lg text-destructive">
+                      {formatCurrency(metrics.totalSaidas)}
+                    </p>
                   </div>
                 </div>
-              </div>
+
+                <Separator />
+
+                <p className="text-xs text-muted-foreground">
+                  O relatório incluirá: cabeçalho corporativo, resumo executivo
+                  com KPIs, gráficos de pizza por categoria (receitas e
+                  despesas), tabela detalhada de transações com saldo acumulado
+                  e rodapé institucional.
+                </p>
+              </>
             )}
-            <Button
-              onClick={handleGeneratePdf}
-              disabled={generating || isLoading || filteredTransactions.length === 0}
-              className="w-full"
-            >
-              {generating ? (
-                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-              ) : (
-                <FileDown className="h-4 w-4 mr-2" />
-              )}
-              Gerar PDF
-            </Button>
+
+            <div className="flex gap-3">
+              <Button
+                variant="outline"
+                onClick={handlePreview}
+                disabled={!hasData || isLoading}
+                className="flex-1"
+              >
+                <Eye className="h-4 w-4 mr-2" />
+                Visualizar
+              </Button>
+              <Button
+                onClick={handleGeneratePdf}
+                disabled={generating || isLoading || !hasData}
+                className="flex-1"
+              >
+                {generating ? (
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                ) : (
+                  <FileDown className="h-4 w-4 mr-2" />
+                )}
+                Gerar PDF
+              </Button>
+            </div>
           </CardContent>
         </Card>
       </main>
