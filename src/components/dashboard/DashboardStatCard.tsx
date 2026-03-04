@@ -1,5 +1,6 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { LucideIcon } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 interface DashboardStatCardProps {
   title: string;
@@ -17,18 +18,18 @@ export function DashboardStatCard({
   iconBg = "bg-primary/10",
 }: DashboardStatCardProps) {
   return (
-    <Card className="shadow-sm hover:shadow-md transition-shadow border-0 shadow-[0_1px_3px_0_hsl(var(--foreground)/0.06)]">
-      <CardContent className="p-5">
-        <div className="flex items-start gap-4">
-          <div className={`p-2.5 rounded-lg ${iconBg} flex-shrink-0`}>
-            <Icon className={`h-5 w-5 ${iconColor}`} />
+    <Card className="group border-0 shadow-sm hover:shadow-md transition-all duration-200 bg-card">
+      <CardContent className="p-4">
+        <div className="flex items-center gap-3">
+          <div className={cn("p-2 rounded-lg flex-shrink-0", iconBg)}>
+            <Icon className={cn("h-4 w-4", iconColor)} />
           </div>
-          <div className="min-w-0">
-            <p className="text-2xl font-bold tracking-tight text-foreground">
-              {value}
-            </p>
-            <p className="text-xs text-muted-foreground mt-0.5 font-medium">
+          <div className="min-w-0 flex-1">
+            <p className="text-[11px] text-muted-foreground font-medium uppercase tracking-wider truncate">
               {title}
+            </p>
+            <p className="text-lg font-bold tracking-tight text-foreground mt-0.5 tabular-nums">
+              {value}
             </p>
           </div>
         </div>

@@ -43,14 +43,14 @@ const Index = () => {
 
   const statCards = [
     {
-      title: "Total de Entradas",
+      title: "Total Entradas",
       value: formatCurrency(metrics.totalEntradas),
       icon: TrendingUp,
       iconColor: "text-success",
       iconBg: "bg-success/10",
     },
     {
-      title: "Total de Saídas",
+      title: "Total Saídas",
       value: formatCurrency(metrics.totalSaidas),
       icon: TrendingDown,
       iconColor: "text-destructive",
@@ -64,14 +64,14 @@ const Index = () => {
       iconBg: metrics.saldoLiquido >= 0 ? "bg-success/10" : "bg-destructive/10",
     },
     {
-      title: "Transações Importadas",
+      title: "Transações",
       value: metrics.transactionCount,
       icon: FileText,
       iconColor: "text-primary",
       iconBg: "bg-primary/10",
     },
     {
-      title: "Duplicatas Detectadas",
+      title: "Duplicatas",
       value: metrics.duplicatesCount,
       icon: AlertTriangle,
       iconColor: "text-warning",
@@ -82,25 +82,25 @@ const Index = () => {
   if (isLoading) {
     return (
       <div className="flex-1 min-h-screen bg-background">
-        <header className="border-b bg-card sticky top-0 z-30">
-          <div className="px-6 py-4 flex items-center gap-4">
+        <header className="border-b bg-card/80 backdrop-blur-sm sticky top-0 z-30">
+          <div className="px-6 py-3 flex items-center gap-4">
             <SidebarTrigger className="-ml-1" />
             <div>
-              <h1 className="text-xl font-bold tracking-tight text-foreground">Dashboard</h1>
-              <p className="text-xs text-muted-foreground">Visão geral fiscal e financeira</p>
+              <h1 className="text-base font-bold tracking-tight text-foreground">Dashboard</h1>
+              <p className="text-[11px] text-muted-foreground">Visão geral financeira</p>
             </div>
           </div>
         </header>
-        <main className="p-6 space-y-6">
-          <section className="grid gap-4 grid-cols-2 md:grid-cols-3 lg:grid-cols-5">
+        <main className="p-5 space-y-5">
+          <section className="grid gap-3 grid-cols-2 md:grid-cols-3 lg:grid-cols-5">
             {Array.from({ length: 5 }).map((_, i) => (
-              <Skeleton key={i} className="h-28 rounded-xl" />
+              <Skeleton key={i} className="h-[72px] rounded-lg" />
             ))}
           </section>
-          <Skeleton className="h-12 rounded-xl" />
-          <div className="grid gap-6 lg:grid-cols-3">
-            <Skeleton className="h-96 rounded-xl lg:col-span-2" />
-            <Skeleton className="h-96 rounded-xl" />
+          <Skeleton className="h-10 rounded-lg" />
+          <div className="grid gap-5 lg:grid-cols-3">
+            <Skeleton className="h-80 rounded-lg lg:col-span-2" />
+            <Skeleton className="h-80 rounded-lg" />
           </div>
         </main>
       </div>
@@ -109,47 +109,46 @@ const Index = () => {
 
   return (
     <div className="flex-1 min-h-screen bg-background">
-      <header className="border-b bg-card sticky top-0 z-30">
-        <div className="px-6 py-4 flex items-center justify-between">
+      <header className="border-b bg-card/80 backdrop-blur-sm sticky top-0 z-30">
+        <div className="px-6 py-3 flex items-center justify-between">
           <div className="flex items-center gap-4">
             <SidebarTrigger className="-ml-1" />
             <div>
-              <h1 className="text-xl font-bold tracking-tight text-foreground">Dashboard</h1>
-              <p className="text-xs text-muted-foreground">Visão geral fiscal e financeira</p>
+              <h1 className="text-base font-bold tracking-tight text-foreground">Dashboard</h1>
+              <p className="text-[11px] text-muted-foreground">Visão geral financeira</p>
             </div>
           </div>
-          <Button size="sm" onClick={() => navigate("/importacao")}>
-            <Upload className="h-4 w-4 mr-2" />
+          <Button size="sm" onClick={() => navigate("/importacao")} className="h-8 text-xs font-semibold">
+            <Upload className="h-3.5 w-3.5 mr-1.5" />
             Importar Extrato
           </Button>
         </div>
       </header>
 
-      <main className="p-6 space-y-6">
+      <main className="p-5 space-y-5">
         {!hasData ? (
-          <Card className="max-w-2xl mx-auto">
-            <CardContent className="pt-12 pb-12 text-center">
-              <div className="flex flex-col items-center gap-6">
-                <div className="p-4 rounded-full bg-primary/10">
-                  <FileBarChart className="h-12 w-12 text-primary" />
+          <Card className="max-w-lg mx-auto border-0 shadow-sm mt-8">
+            <CardContent className="pt-10 pb-10 text-center">
+              <div className="flex flex-col items-center gap-5">
+                <div className="p-4 rounded-2xl bg-primary/10">
+                  <FileBarChart className="h-10 w-10 text-primary" />
                 </div>
                 <div>
-                  <h2 className="text-2xl font-bold mb-2">Nenhuma transação importada</h2>
-                  <p className="text-muted-foreground max-w-md mx-auto">
-                    Importe seu primeiro extrato bancário para visualizar as métricas financeiras,
-                    gráficos e análises do seu fluxo de caixa.
+                  <h2 className="text-xl font-bold text-foreground mb-1">Nenhuma transação</h2>
+                  <p className="text-sm text-muted-foreground max-w-sm mx-auto">
+                    Importe seu primeiro extrato bancário para visualizar métricas, gráficos e análises do fluxo de caixa.
                   </p>
                 </div>
-                <Button size="lg" onClick={() => navigate("/importacao")}>
-                  <Upload className="h-5 w-5 mr-2" />
-                  Importar Primeiro Extrato
+                <Button onClick={() => navigate("/importacao")} className="font-semibold">
+                  <Upload className="h-4 w-4 mr-2" />
+                  Importar Extrato
                 </Button>
               </div>
             </CardContent>
           </Card>
         ) : (
           <>
-            <section className="grid gap-4 grid-cols-2 md:grid-cols-3 lg:grid-cols-5">
+            <section className="grid gap-3 grid-cols-2 md:grid-cols-3 lg:grid-cols-5">
               {statCards.map((card) => (
                 <DashboardStatCard key={card.title} {...card} />
               ))}
@@ -164,51 +163,47 @@ const Index = () => {
             </section>
 
             {!hasFilteredData ? (
-              <Card>
-                <CardContent className="py-12 text-center">
-                  <p className="text-lg font-medium text-muted-foreground">
+              <Card className="border-0 shadow-sm">
+                <CardContent className="py-10 text-center">
+                  <p className="text-sm font-medium text-muted-foreground">
                     Sem dados no período selecionado
                   </p>
-                  <p className="text-sm text-muted-foreground mt-1">
-                    Ajuste os filtros ou selecione outro intervalo de datas.
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Ajuste os filtros ou selecione outro intervalo.
                   </p>
                 </CardContent>
               </Card>
             ) : (
               <>
-                <section className="grid gap-6 lg:grid-cols-3">
+                <section className="grid gap-5 lg:grid-cols-3">
                   <div className="lg:col-span-2">
                     <FinancialChart data={metrics.monthlyData} />
                   </div>
                   {categoryDataEntradas.length > 0 && (
-                    <div>
-                      <CategoryPieChart data={categoryDataEntradas} title="Entradas por Categoria" />
-                    </div>
+                    <CategoryPieChart data={categoryDataEntradas} title="Entradas por Categoria" />
                   )}
                 </section>
 
-                <section className="grid gap-6 lg:grid-cols-3">
+                <section className="grid gap-5 lg:grid-cols-3">
                   <div className="lg:col-span-2">
-                    <Card>
-                      <CardHeader>
-                        <CardTitle className="text-base">
+                    <Card className="border-0 shadow-sm">
+                      <CardHeader className="pb-2">
+                        <CardTitle className="text-sm font-semibold flex items-center gap-2">
                           Transações Recentes
                           {filteredTransactions.length !== transactions.length && (
-                            <span className="text-sm font-normal text-muted-foreground ml-2">
+                            <span className="text-xs font-normal text-muted-foreground">
                               ({filteredTransactions.length} de {transactions.length})
                             </span>
                           )}
                         </CardTitle>
                       </CardHeader>
-                      <CardContent>
+                      <CardContent className="pt-0">
                         <TransactionTable transactions={filteredTransactions} />
                       </CardContent>
                     </Card>
                   </div>
                   {categoryDataSaidas.length > 0 && (
-                    <div>
-                      <CategoryPieChart data={categoryDataSaidas} title="Saídas por Categoria" />
-                    </div>
+                    <CategoryPieChart data={categoryDataSaidas} title="Saídas por Categoria" />
                   )}
                 </section>
               </>

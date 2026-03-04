@@ -2,13 +2,7 @@ import { useState, useMemo } from "react";
 import { FileDown, Loader2, Building2, Eye } from "lucide-react";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-  CardDescription,
-} from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
@@ -24,10 +18,7 @@ const Relatorio = () => {
     endDate: undefined,
     excludedCategories: [],
   });
-  const { filteredTransactions, metrics, formatCurrency } = useDashboardMetrics(
-    transactions,
-    filters
-  );
+  const { filteredTransactions, metrics, formatCurrency } = useDashboardMetrics(transactions, filters);
   const [generating, setGenerating] = useState(false);
   const [companyName, setCompanyName] = useState("R&R Contas");
   const [companyId, setCompanyId] = useState("");
@@ -35,21 +26,18 @@ const Relatorio = () => {
   const period = useMemo(() => {
     if (filteredTransactions.length === 0) return { start: "—", end: "—" };
     const dates = filteredTransactions.map((t) => new Date(t.date).getTime());
-    const min = new Date(Math.min(...dates));
-    const max = new Date(Math.max(...dates));
     return {
-      start: min.toLocaleDateString("pt-BR"),
-      end: max.toLocaleDateString("pt-BR"),
+      start: new Date(Math.min(...dates)).toLocaleDateString("pt-BR"),
+      end: new Date(Math.max(...dates)).toLocaleDateString("pt-BR"),
     };
   }, [filteredTransactions]);
 
-  const handleGeneratePdf = () => {
+  const openReport = (print: boolean) => {
     if (filteredTransactions.length === 0) {
-      toast.error("Nenhuma transação disponível para gerar relatório.");
+      toast.error("Nenhuma transação disponível.");
       return;
     }
-
-    setGenerating(true);
+    if (print) setGenerating(true);
     try {
       const html = generateProfessionalReport(filteredTransactions, metrics, {
         companyName: companyName || "R&R Contas",
@@ -57,179 +45,112 @@ const Relatorio = () => {
         periodStart: period.start,
         periodEnd: period.end,
       });
-
-      const printWindow = window.open("", "_blank");
-      if (!printWindow) {
-        toast.error("Permita pop-ups para gerar o relatório.");
-        return;
-      }
-
-      printWindow.document.write(html);
-      printWindow.document.close();
-      printWindow.print();
-      toast.success("Relatório gerado com sucesso!");
+      const w = window.open("", "_blank");
+      if (!w) { toast.error("Permita pop-ups para continuar."); return; }
+      w.document.write(html);
+      w.document.close();
+      if (print) { w.print(); toast.success("Relatório gerado!"); }
     } catch {
       toast.error("Erro ao gerar relatório.");
     } finally {
-      setGenerating(false);
+      if (print) setGenerating(false);
     }
-  };
-
-  const handlePreview = () => {
-    if (filteredTransactions.length === 0) return;
-
-    const html = generateProfessionalReport(filteredTransactions, metrics, {
-      companyName: companyName || "R&R Contas",
-      companyId: companyId || "—",
-      periodStart: period.start,
-      periodEnd: period.end,
-    });
-
-    const previewWindow = window.open("", "_blank");
-    if (!previewWindow) {
-      toast.error("Permita pop-ups para visualizar.");
-      return;
-    }
-    previewWindow.document.write(html);
-    previewWindow.document.close();
   };
 
   const hasData = filteredTransactions.length > 0;
 
   return (
     <div className="flex-1 min-h-screen bg-background">
-      <header className="border-b bg-card sticky top-0 z-30">
-        <div className="px-6 py-4 flex items-center gap-4">
+      <header className="border-b bg-card/80 backdrop-blur-sm sticky top-0 z-30">
+        <div className="px-6 py-3 flex items-center gap-4">
           <SidebarTrigger className="-ml-1" />
           <div>
-            <h1 className="text-xl font-bold tracking-tight text-foreground">
-              Gerar Relatório
-            </h1>
-            <p className="text-xs text-muted-foreground">
-              Exporte um relatório financeiro profissional em PDF
-            </p>
+            <h1 className="text-base font-bold tracking-tight text-foreground">Relatório PDF</h1>
+            <p className="text-[11px] text-muted-foreground">Exporte relatório financeiro profissional</p>
           </div>
         </div>
       </header>
 
-      <main className="p-6 max-w-3xl mx-auto space-y-6">
-        {/* Company Config */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-base">
-              <Building2 className="h-4 w-4" />
+      <main className="p-5 max-w-2xl mx-auto space-y-5">
+        <Card className="border-0 shadow-sm">
+          <CardHeader className="pb-2">
+            <CardTitle className="flex items-center gap-2 text-sm font-semibold">
+              <Building2 className="h-4 w-4 text-muted-foreground" />
               Dados da Empresa
             </CardTitle>
-            <CardDescription>
-              Informações que aparecerão no cabeçalho do relatório.
-            </CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="company-name">Nome da Empresa</Label>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div className="space-y-1">
+                <Label className="text-[11px] text-muted-foreground">Nome</Label>
                 <Input
-                  id="company-name"
                   placeholder="R&R Contas"
                   value={companyName}
                   onChange={(e) => setCompanyName(e.target.value)}
+                  className="h-8 text-sm"
                 />
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="company-id">CNPJ / Identificação</Label>
+              <div className="space-y-1">
+                <Label className="text-[11px] text-muted-foreground">CNPJ / ID</Label>
                 <Input
-                  id="company-id"
                   placeholder="00.000.000/0001-00"
                   value={companyId}
                   onChange={(e) => setCompanyId(e.target.value)}
+                  className="h-8 text-sm"
                 />
               </div>
             </div>
           </CardContent>
         </Card>
 
-        {/* Summary & Actions */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-base">
-              <FileDown className="h-4 w-4" />
+        <Card className="border-0 shadow-sm">
+          <CardHeader className="pb-2">
+            <CardTitle className="flex items-center gap-2 text-sm font-semibold">
+              <FileDown className="h-4 w-4 text-muted-foreground" />
               Relatório Financeiro
             </CardTitle>
-            <CardDescription>
-              Relatório corporativo com resumo executivo, gráficos de
-              categorias, e listagem completa de transações com saldo
-              acumulado.
+            <CardDescription className="text-xs">
+              Resumo executivo, gráficos por categoria e extrato completo com saldo acumulado.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             {isLoading ? (
-              <p className="text-sm text-muted-foreground">
-                Carregando transações...
-              </p>
+              <p className="text-xs text-muted-foreground">Carregando...</p>
             ) : !hasData ? (
               <div className="text-center py-6">
-                <p className="text-sm text-muted-foreground">
-                  Nenhuma transação importada. Importe um extrato primeiro.
-                </p>
+                <p className="text-xs text-muted-foreground">Nenhuma transação importada.</p>
               </div>
             ) : (
               <>
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                  <div className="rounded-lg border p-3">
-                    <p className="text-muted-foreground text-xs">Período</p>
-                    <p className="font-semibold text-sm mt-1">
-                      {period.start} — {period.end}
-                    </p>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                  <div className="rounded-lg border p-2.5">
+                    <p className="text-muted-foreground text-[10px] uppercase tracking-wider">Período</p>
+                    <p className="font-semibold text-xs mt-0.5">{period.start} — {period.end}</p>
                   </div>
-                  <div className="rounded-lg border p-3">
-                    <p className="text-muted-foreground text-xs">Lançamentos</p>
-                    <p className="font-bold text-lg">{metrics.transactionCount}</p>
+                  <div className="rounded-lg border p-2.5">
+                    <p className="text-muted-foreground text-[10px] uppercase tracking-wider">Lançamentos</p>
+                    <p className="font-bold text-base tabular-nums">{metrics.transactionCount}</p>
                   </div>
-                  <div className="rounded-lg border p-3">
-                    <p className="text-muted-foreground text-xs">Entradas</p>
-                    <p className="font-bold text-lg text-success">
-                      {formatCurrency(metrics.totalEntradas)}
-                    </p>
+                  <div className="rounded-lg border p-2.5">
+                    <p className="text-muted-foreground text-[10px] uppercase tracking-wider">Entradas</p>
+                    <p className="font-bold text-base text-success tabular-nums">{formatCurrency(metrics.totalEntradas)}</p>
                   </div>
-                  <div className="rounded-lg border p-3">
-                    <p className="text-muted-foreground text-xs">Saídas</p>
-                    <p className="font-bold text-lg text-destructive">
-                      {formatCurrency(metrics.totalSaidas)}
-                    </p>
+                  <div className="rounded-lg border p-2.5">
+                    <p className="text-muted-foreground text-[10px] uppercase tracking-wider">Saídas</p>
+                    <p className="font-bold text-base text-destructive tabular-nums">{formatCurrency(metrics.totalSaidas)}</p>
                   </div>
                 </div>
-
                 <Separator />
-
-                <p className="text-xs text-muted-foreground">
-                  O relatório incluirá: cabeçalho corporativo, resumo executivo
-                  com KPIs, gráficos de pizza por categoria (receitas e
-                  despesas), tabela detalhada de transações com saldo acumulado
-                  e rodapé institucional.
-                </p>
               </>
             )}
 
-            <div className="flex gap-3">
-              <Button
-                variant="outline"
-                onClick={handlePreview}
-                disabled={!hasData || isLoading}
-                className="flex-1"
-              >
-                <Eye className="h-4 w-4 mr-2" />
+            <div className="flex gap-2">
+              <Button variant="outline" onClick={() => openReport(false)} disabled={!hasData || isLoading} className="flex-1 h-9 text-xs font-semibold">
+                <Eye className="h-3.5 w-3.5 mr-1.5" />
                 Visualizar
               </Button>
-              <Button
-                onClick={handleGeneratePdf}
-                disabled={generating || isLoading || !hasData}
-                className="flex-1"
-              >
-                {generating ? (
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                ) : (
-                  <FileDown className="h-4 w-4 mr-2" />
-                )}
+              <Button onClick={() => openReport(true)} disabled={generating || isLoading || !hasData} className="flex-1 h-9 text-xs font-semibold">
+                {generating ? <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" /> : <FileDown className="h-3.5 w-3.5 mr-1.5" />}
                 Gerar PDF
               </Button>
             </div>
