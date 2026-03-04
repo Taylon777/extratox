@@ -9,7 +9,7 @@ import { SidebarProvider } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
 import Index from "./pages/Index";
 import ImportFinanceira from "./pages/ImportFinanceira";
-import Templates from "./pages/Templates";
+
 import Relatorio from "./pages/Relatorio";
 import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
@@ -55,16 +55,8 @@ const App = () => {
                   </ProtectedRoute>
                 }
               />
-              <Route
-                path="/templates"
-                element={
-                  <ProtectedRoute>
-                    <AppLayout>
-                      <Templates />
-                    </AppLayout>
-                  </ProtectedRoute>
-                }
-              />
+
+
               <Route
                 path="/relatorio"
                 element={
