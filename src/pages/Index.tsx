@@ -8,6 +8,9 @@ import {
   AlertTriangle,
   Upload,
   FileBarChart,
+  BarChart3,
+  Percent,
+  CalendarDays,
 } from "lucide-react";
 import { useTransactions } from "@/hooks/useTransactions";
 import { useDashboardMetrics, FilterState } from "@/hooks/useDashboardMetrics";
@@ -64,6 +67,27 @@ const Index = () => {
       iconBg: metrics.saldoLiquido >= 0 ? "bg-success/10" : "bg-destructive/10",
     },
     {
+      title: "Margem",
+      value: `${metrics.marginPercent.toFixed(1)}%`,
+      icon: Percent,
+      iconColor: metrics.marginPercent >= 0 ? "text-success" : "text-destructive",
+      iconBg: metrics.marginPercent >= 0 ? "bg-success/10" : "bg-destructive/10",
+    },
+    {
+      title: "Ticket Médio",
+      value: formatCurrency(metrics.avgTicket),
+      icon: BarChart3,
+      iconColor: "text-primary",
+      iconBg: "bg-primary/10",
+    },
+    {
+      title: "Média Diária",
+      value: formatCurrency(metrics.dailyAverage),
+      icon: CalendarDays,
+      iconColor: "text-info",
+      iconBg: "bg-info/10",
+    },
+    {
       title: "Transações",
       value: metrics.transactionCount,
       icon: FileText,
@@ -93,7 +117,7 @@ const Index = () => {
         </header>
         <main className="p-5 space-y-5">
           <section className="grid gap-3 grid-cols-2 md:grid-cols-3 lg:grid-cols-5">
-            {Array.from({ length: 5 }).map((_, i) => (
+            {Array.from({ length: 8 }).map((_, i) => (
               <Skeleton key={i} className="h-[72px] rounded-lg" />
             ))}
           </section>
@@ -148,7 +172,7 @@ const Index = () => {
           </Card>
         ) : (
           <>
-            <section className="grid gap-3 grid-cols-2 md:grid-cols-3 lg:grid-cols-5">
+            <section className="grid gap-3 grid-cols-2 md:grid-cols-4 lg:grid-cols-4">
               {statCards.map((card) => (
                 <DashboardStatCard key={card.title} {...card} />
               ))}

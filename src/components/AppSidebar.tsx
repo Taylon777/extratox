@@ -2,6 +2,7 @@ import {
   LayoutDashboard,
   Upload,
   FileDown,
+  FileStack,
   LogOut,
   Sun,
   Moon,
@@ -28,6 +29,7 @@ import { Separator } from "@/components/ui/separator";
 const mainItems = [
   { title: "Dashboard", url: "/", icon: LayoutDashboard },
   { title: "Importar Extrato", url: "/importacao", icon: Upload },
+  { title: "Extratos", url: "/extratos", icon: FileStack },
   { title: "Relatório PDF", url: "/relatorio", icon: FileDown },
 ];
 
