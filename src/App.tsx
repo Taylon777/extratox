@@ -9,7 +9,7 @@ import { SidebarProvider } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
 import Index from "./pages/Index";
 import ImportFinanceira from "./pages/ImportFinanceira";
-
+import Extratos from "./pages/Extratos";
 import Relatorio from "./pages/Relatorio";
 import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
@@ -55,8 +55,16 @@ const App = () => {
                   </ProtectedRoute>
                 }
               />
-
-
+              <Route
+                path="/extratos"
+                element={
+                  <ProtectedRoute>
+                    <AppLayout>
+                      <Extratos />
+                    </AppLayout>
+                  </ProtectedRoute>
+                }
+              />
               <Route
                 path="/relatorio"
                 element={

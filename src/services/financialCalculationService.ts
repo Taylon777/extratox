@@ -13,6 +13,9 @@ export interface FinancialMetrics {
   saidasCount: number;
   categoryBreakdown: CategoryBreakdownItem[];
   monthlyData: MonthlyDataPoint[];
+  marginPercent: number;
+  avgTicket: number;
+  dailyAverage: number;
 }
 
 export interface CategoryBreakdownItem {
@@ -121,16 +124,26 @@ export function calculateMetrics(transactions: TransactionLike[]): FinancialMetr
       };
     });
 
+  const saldoLiquido = totalEntradas - totalSaidas;
+  const marginPercent = totalEntradas > 0 ? ((saldoLiquido / totalEntradas) * 100) : 0;
+  const avgTicket = transactions.length > 0 ? (totalEntradas + totalSaidas) / transactions.length : 0;
+  const dates = transactions.map((t) => new Date(t.date).getTime());
+  const daySpan = dates.length > 0 ? Math.max(1, Math.ceil((Math.max(...dates) - Math.min(...dates)) / 86400000) + 1) : 1;
+  const dailyAverage = (totalEntradas + totalSaidas) / daySpan;
+
   return {
     totalEntradas,
     totalSaidas,
-    saldoLiquido: totalEntradas - totalSaidas,
+    saldoLiquido,
     transactionCount: transactions.length,
     duplicatesCount,
     entradasCount,
     saidasCount,
     categoryBreakdown,
     monthlyData,
+    marginPercent,
+    avgTicket,
+    dailyAverage,
   };
 }
 
