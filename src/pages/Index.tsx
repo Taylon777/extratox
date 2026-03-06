@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   TrendingUp,
@@ -8,21 +8,28 @@ import {
   AlertTriangle,
   Upload,
   FileBarChart,
-  BarChart3,
   Percent,
   CalendarDays,
+  ArrowUpRight,
+  ArrowDownRight,
+  Activity,
+  Tag,
 } from "lucide-react";
 import { useTransactions } from "@/hooks/useTransactions";
 import { useDashboardMetrics, FilterState } from "@/hooks/useDashboardMetrics";
 import { DashboardStatCard } from "@/components/dashboard/DashboardStatCard";
 import { TransactionTable } from "@/components/dashboard/TransactionTable";
 import { FinancialChart } from "@/components/dashboard/FinancialChart";
+import { DailyBalanceChart } from "@/components/dashboard/DailyBalanceChart";
 import { CategoryPieChart } from "@/components/dashboard/CategoryPieChart";
 import { TransactionFilters } from "@/components/dashboard/TransactionFilters";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { SidebarTrigger } from "@/components/ui/sidebar";
+
+const formatCurrency = (value: number) =>
+  new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(value);
 
 const Index = () => {
   const navigate = useNavigate();
@@ -38,13 +45,12 @@ const Index = () => {
     metrics,
     categoryDataEntradas,
     categoryDataSaidas,
-    formatCurrency,
   } = useDashboardMetrics(transactions, filters);
 
   const hasData = transactions.length > 0;
   const hasFilteredData = filteredTransactions.length > 0;
 
-  const statCards = [
+  const primaryCards = useMemo(() => [
     {
       title: "Total Entradas",
       value: formatCurrency(metrics.totalEntradas),
@@ -73,10 +79,13 @@ const Index = () => {
       iconColor: metrics.marginPercent >= 0 ? "text-success" : "text-destructive",
       iconBg: metrics.marginPercent >= 0 ? "bg-success/10" : "bg-destructive/10",
     },
+  ], [metrics]);
+
+  const secondaryCards = useMemo(() => [
     {
       title: "Ticket Médio",
       value: formatCurrency(metrics.avgTicket),
-      icon: BarChart3,
+      icon: Activity,
       iconColor: "text-primary",
       iconBg: "bg-primary/10",
     },
@@ -101,7 +110,52 @@ const Index = () => {
       iconColor: "text-warning",
       iconBg: "bg-warning/10",
     },
-  ];
+  ], [metrics]);
+
+  const highlightCards = useMemo(() => {
+    const cards: { title: string; value: string; subtitle: string; icon: any; iconColor: string; iconBg: string }[] = [];
+    if (metrics.largestInflow) {
+      cards.push({
+        title: "Maior Entrada",
+        value: formatCurrency(metrics.largestInflow.value),
+        subtitle: metrics.largestInflow.description.slice(0, 40),
+        icon: ArrowUpRight,
+        iconColor: "text-success",
+        iconBg: "bg-success/10",
+      });
+    }
+    if (metrics.largestOutflow) {
+      cards.push({
+        title: "Maior Saída",
+        value: formatCurrency(metrics.largestOutflow.value),
+        subtitle: metrics.largestOutflow.description.slice(0, 40),
+        icon: ArrowDownRight,
+        iconColor: "text-destructive",
+        iconBg: "bg-destructive/10",
+      });
+    }
+    if (metrics.topRevenueCategory) {
+      cards.push({
+        title: "Top Receita",
+        value: metrics.topRevenueCategory.label,
+        subtitle: formatCurrency(metrics.topRevenueCategory.total),
+        icon: Tag,
+        iconColor: "text-success",
+        iconBg: "bg-success/10",
+      });
+    }
+    if (metrics.topExpenseCategory) {
+      cards.push({
+        title: "Top Despesa",
+        value: metrics.topExpenseCategory.label,
+        subtitle: formatCurrency(metrics.topExpenseCategory.total),
+        icon: Tag,
+        iconColor: "text-destructive",
+        iconBg: "bg-destructive/10",
+      });
+    }
+    return cards;
+  }, [metrics]);
 
   if (isLoading) {
     return (
@@ -116,7 +170,7 @@ const Index = () => {
           </div>
         </header>
         <main className="p-5 space-y-5">
-          <section className="grid gap-3 grid-cols-2 md:grid-cols-3 lg:grid-cols-5">
+          <section className="grid gap-3 grid-cols-2 md:grid-cols-4">
             {Array.from({ length: 8 }).map((_, i) => (
               <Skeleton key={i} className="h-[72px] rounded-lg" />
             ))}
@@ -172,11 +226,28 @@ const Index = () => {
           </Card>
         ) : (
           <>
-            <section className="grid gap-3 grid-cols-2 md:grid-cols-4 lg:grid-cols-4">
-              {statCards.map((card) => (
+            {/* Primary KPIs */}
+            <section className="grid gap-3 grid-cols-2 md:grid-cols-4">
+              {primaryCards.map((card) => (
                 <DashboardStatCard key={card.title} {...card} />
               ))}
             </section>
+
+            {/* Secondary KPIs */}
+            <section className="grid gap-3 grid-cols-2 md:grid-cols-4">
+              {secondaryCards.map((card) => (
+                <DashboardStatCard key={card.title} {...card} />
+              ))}
+            </section>
+
+            {/* Highlight Cards */}
+            {highlightCards.length > 0 && (
+              <section className="grid gap-3 grid-cols-2 md:grid-cols-4">
+                {highlightCards.map((card) => (
+                  <DashboardStatCard key={card.title} {...card} subtitle={card.subtitle} />
+                ))}
+              </section>
+            )}
 
             <section>
               <TransactionFilters
@@ -192,13 +263,18 @@ const Index = () => {
                   <p className="text-sm font-medium text-muted-foreground">
                     Sem dados no período selecionado
                   </p>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    Ajuste os filtros ou selecione outro intervalo.
-                  </p>
                 </CardContent>
               </Card>
             ) : (
               <>
+                {/* Daily Balance Evolution */}
+                {metrics.dailyBalanceData.length > 1 && (
+                  <section>
+                    <DailyBalanceChart data={metrics.dailyBalanceData} />
+                  </section>
+                )}
+
+                {/* Cash Flow + Pie Charts */}
                 <section className="grid gap-5 lg:grid-cols-3">
                   <div className="lg:col-span-2">
                     <FinancialChart data={metrics.monthlyData} />
@@ -208,6 +284,7 @@ const Index = () => {
                   )}
                 </section>
 
+                {/* Transactions + Exit Pie */}
                 <section className="grid gap-5 lg:grid-cols-3">
                   <div className="lg:col-span-2">
                     <Card className="border-0 shadow-sm">
