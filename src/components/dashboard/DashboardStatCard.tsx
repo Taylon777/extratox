@@ -5,6 +5,7 @@ import { cn } from "@/lib/utils";
 interface DashboardStatCardProps {
   title: string;
   value: string | number;
+  subtitle?: string;
   icon: LucideIcon;
   iconColor?: string;
   iconBg?: string;
@@ -13,6 +14,7 @@ interface DashboardStatCardProps {
 export function DashboardStatCard({
   title,
   value,
+  subtitle,
   icon: Icon,
   iconColor = "text-primary",
   iconBg = "bg-primary/10",
@@ -31,6 +33,9 @@ export function DashboardStatCard({
             <p className="text-lg font-bold tracking-tight text-foreground mt-0.5 tabular-nums">
               {value}
             </p>
+            {subtitle && (
+              <p className="text-[10px] text-muted-foreground truncate mt-0.5">{subtitle}</p>
+            )}
           </div>
         </div>
       </CardContent>
