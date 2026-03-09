@@ -81,7 +81,7 @@ export default function Auth() {
           <div className="mx-auto mb-3 w-12 h-12 rounded-xl bg-primary flex items-center justify-center">
             <TrendingUp className="h-6 w-6 text-primary-foreground" />
           </div>
-          <h1 className="text-xl font-bold text-foreground tracking-tight">ExtratoX</h1>
+          <h1 className="text-xl font-bold text-foreground tracking-tight">RR Finance</h1>
           <p className="text-xs text-muted-foreground mt-0.5">Gestão Financeira</p>
         </div>
 

@@ -489,7 +489,7 @@ export function generateProfessionalReport(
 
 <div class="footer">
   <strong>${config.companyName}</strong> · Relatório gerado em ${reportDate} às ${reportTime} · Documento confidencial para uso interno<br>
-  Gerado automaticamente pelo sistema ExtratoX · Todos os valores em R$ (BRL)
+  Gerado automaticamente pelo sistema RR Finance · Todos os valores em R$ (BRL)
 </div>
 
 </body></html>`;
