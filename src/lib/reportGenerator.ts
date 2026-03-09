@@ -156,7 +156,7 @@ export function generateProfessionalReport(
 
   // Sort transactions chronologically for running balance
   const sorted = [...transactions].sort(
-    (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
+    (a, b) => a.date.localeCompare(b.date)
   );
 
   // Build running balance rows with alternating colors
@@ -165,7 +165,8 @@ export function generateProfessionalReport(
     .map((t, idx) => {
       const sign = t.type === "entrada" ? 1 : -1;
       runningBalance += t.value * sign;
-      const dateStr = new Date(t.date).toLocaleDateString("pt-BR");
+      const [year, month, day] = t.date.split("-");
+      const dateStr = `${day}/${month}/${year}`;
       const catLabel = CATEGORY_LABELS[t.category] || t.category;
       const valueColor = t.type === "entrada" ? "#047857" : "#b91c1c";
       const valuePrefix = t.type === "entrada" ? "+" : "−";
