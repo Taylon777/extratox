@@ -49,7 +49,7 @@ export function AppSidebar() {
           {!collapsed && (
             <div className="flex flex-col min-w-0">
               <span className="text-sm font-bold text-sidebar-primary-foreground tracking-tight truncate">
-                ExtratoX
+                RR Finance
               </span>
               <span className="text-[10px] text-sidebar-foreground/50 truncate uppercase tracking-widest">
                 Gestão Financeira
