@@ -165,7 +165,8 @@ export function generateProfessionalReport(
     .map((t, idx) => {
       const sign = t.type === "entrada" ? 1 : -1;
       runningBalance += t.value * sign;
-      const dateStr = new Date(t.date).toLocaleDateString("pt-BR");
+      const [year, month, day] = t.date.split("-");
+      const dateStr = `${day}/${month}/${year}`;
       const catLabel = CATEGORY_LABELS[t.category] || t.category;
       const valueColor = t.type === "entrada" ? "#047857" : "#b91c1c";
       const valuePrefix = t.type === "entrada" ? "+" : "−";
