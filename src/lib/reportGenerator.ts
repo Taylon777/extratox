@@ -156,7 +156,7 @@ export function generateProfessionalReport(
 
   // Sort transactions chronologically for running balance
   const sorted = [...transactions].sort(
-    (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
+    (a, b) => a.date.localeCompare(b.date)
   );
 
   // Build running balance rows with alternating colors
