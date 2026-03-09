@@ -58,6 +58,31 @@ export async function fetchExistingHashes(userId: string): Promise<Set<string>> 
   return new Set((data || []).map((r) => r.transaction_hash).filter(Boolean) as string[]);
 }
 
+/**
+ * Builds a signature key for counting occurrences within a batch.
+ */
+function buildSignatureKey(t: TransactionToImport): string {
+  return `${t.date}|${t.value.toFixed(2)}|${t.description.trim().toLowerCase()}|${t.type}`;
+}
+
+/**
+ * Generate a legacy hash (without occurrence index) for backward compatibility
+ * with hashes already stored in the database.
+ */
+async function generateLegacyHash(
+  date: string,
+  value: number,
+  description: string,
+  type: "entrada" | "saida"
+): Promise<string> {
+  const raw = `${date}|${value.toFixed(2)}|${description.trim().toLowerCase()}|${type}`;
+  const encoder = new TextEncoder();
+  const data = encoder.encode(raw);
+  const hashBuffer = await crypto.subtle.digest("SHA-256", data);
+  const hashArray = Array.from(new Uint8Array(hashBuffer));
+  return hashArray.map((b) => b.toString(16).padStart(2, "0")).join("");
+}
+
 /** Save transactions with deduplication, linked to an import session */
 export async function saveTransactionsWithDedup(
   userId: string,
@@ -69,10 +94,25 @@ export async function saveTransactionsWithDedup(
   const rowsToInsert: any[] = [];
   let skipped = 0;
 
-  for (const t of transactions) {
-    const hash = await generateTransactionHash(t.date, t.value, t.description, t.type);
+  // Count occurrences within this batch for unique indexing
+  const occurrenceCounter = new Map<string, number>();
 
-    if (existingHashes.has(hash) || seenHashes.has(hash)) {
+  for (const t of transactions) {
+    const sigKey = buildSignatureKey(t);
+    const currentIndex = occurrenceCounter.get(sigKey) || 0;
+    occurrenceCounter.set(sigKey, currentIndex + 1);
+
+    const hash = await generateTransactionHash(t.date, t.value, t.description, t.type, currentIndex);
+
+    // Also check legacy hash (without occurrence index) for backward compat
+    const legacyHash = await generateLegacyHash(t.date, t.value, t.description, t.type);
+
+    const isDuplicate =
+      existingHashes.has(hash) ||
+      existingHashes.has(legacyHash) ||
+      seenHashes.has(hash);
+
+    if (isDuplicate) {
       skipped++;
       continue;
     }
